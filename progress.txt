@@ -11,3 +11,13 @@
 - Architecture confirmed from spec: Next.js App Router, Supabase + pgvector, Anthropic Claude API, Tailwind CSS
 - Key decisions: Cmd+K command bar UI, memory files as markdown briefing docs, LLM-based context routing, warm "paper feel" aesthetic
 - No code changes made (discovery only)
+
+## SM-002: Project scaffolding
+- Scaffolded Next.js 16.1.6 with App Router, TypeScript strict mode, Tailwind v4
+- Warm neutral palette configured via CSS variables: background #faf8f5, foreground #1a1a1a, muted #6b6b6b, accent #e8e4df, border #d4d0cb
+- Tailwind v4 uses @theme inline in CSS instead of tailwind.config.ts
+- Created directories: lib/, components/, app/api/, types/, scripts/
+- Landing page renders "Second Mind" text
+- npm run build succeeds with zero errors
+- All pre-existing files preserved
+- Gotcha: Tailwind v4 config is CSS-based, not JS/TS config file based

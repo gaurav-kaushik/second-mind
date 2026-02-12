@@ -36,7 +36,7 @@
         "npm run build succeeds with zero errors"
       ],
       "priority": 2,
-      "passes": false
+      "passes": true
     },
     {
       "id": "SM-003",
