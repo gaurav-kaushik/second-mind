@@ -226,3 +226,22 @@
 - Evaluated against spec Section 5 design principles: paper feel, tactile interactions, information density, command bar primacy
 - Notable finding: error responses render as normal messages — violates "gentle error state" design goal
 - Gotcha: Playwright script must use storageState (not login flow) to avoid redirect timeout issues in headless mode
+
+## SM-024: Execute top UX improvements
+- Implemented all 3 P0 and all 5 P1 items from UX_IMPROVEMENTS_BACKLOG.md
+- Plus 1 bonus P2 (message fade-in animation)
+- P0 fixes:
+  1. Error messages now have distinct "error" role with italic text, muted color, and warning icon
+  2. Command bar has overlayIn + modalIn CSS animations (200ms settling effect)
+  3. Scroll gradient at top of conversation area when scrolled down
+- P1 fixes:
+  4. User message bubble contrast increased from bg-accent/40 to bg-accent/60
+  5. Landing page has subtitle + 3 example prompt pills
+  6. "New conversation" button has "+" icon, border, cleaner styling
+  7. Keyboard hints ("Enter to send · Esc to close") below empty input
+  8. Memory inspector "Back" → "← Back" for consistent arrow navigation
+- Also fixed: vitest.config.ts now excludes tests/e2e/** to prevent Playwright/Vitest collision
+- All 14 unit tests pass, all 20 E2E tests pass (desktop + mobile)
+- npm run build succeeds, npm run lint passes cleanly
+- Re-captured UX screenshots reflecting improved UI
+- Gotcha: Vitest was picking up Playwright test files (both use .spec.ts) — need explicit exclude config

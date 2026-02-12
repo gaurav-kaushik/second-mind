@@ -5,7 +5,7 @@ import MarkdownResponse from "./MarkdownResponse";
 import MemoryInspector from "./MemoryInspector";
 
 interface Message {
-  role: "user" | "assistant";
+  role: "user" | "assistant" | "error";
   content: string;
 }
 
@@ -21,7 +21,6 @@ export default function MobileCommandBar() {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
   const [showMemoryInspector, setShowMemoryInspector] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -50,7 +49,6 @@ export default function MobileCommandBar() {
 
   const handleNewConversation = useCallback(() => {
     setMessages([]);
-    setError("");
     setInput("");
     setShowMemoryInspector(false);
     inputRef.current?.focus();
@@ -68,7 +66,6 @@ export default function MobileCommandBar() {
     }
 
     setInput("");
-    setError("");
 
     const newMessages: Message[] = [
       ...messages,
@@ -79,9 +76,10 @@ export default function MobileCommandBar() {
 
     try {
       const history = newMessages
+        .filter((m) => m.role !== "error")
         .slice(-MAX_HISTORY * 2)
         .slice(0, -1)
-        .map((m) => ({ role: m.role, content: m.content }));
+        .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
 
       const res = await fetch("/api/command", {
         method: "POST",
@@ -94,7 +92,10 @@ export default function MobileCommandBar() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(data.error || "Something went wrong. Please try again.");
+        setMessages((prev) => [
+          ...prev,
+          { role: "error", content: data.error || "Something went wrong. Please try again." },
+        ]);
         return;
       }
 
@@ -104,7 +105,10 @@ export default function MobileCommandBar() {
         { role: "assistant", content: data.response || "No response received." },
       ]);
     } catch {
-      setError("Could not reach the server. Please check your connection.");
+      setMessages((prev) => [
+        ...prev,
+        { role: "error", content: "Could not reach the server. Please check your connection." },
+      ]);
     } finally {
       setIsLoading(false);
     }
@@ -133,8 +137,12 @@ export default function MobileCommandBar() {
         {(messages.length > 0 || showMemoryInspector) && (
           <button
             onClick={handleNewConversation}
-            className="text-xs text-muted hover:text-foreground transition-colors"
+            className="flex items-center gap-1 text-xs text-muted hover:text-foreground transition-colors"
           >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
             New
           </button>
         )}
@@ -157,7 +165,7 @@ export default function MobileCommandBar() {
             className="flex-1 overflow-y-auto px-4 py-4 space-y-4 min-h-0"
           >
             {messages.length === 0 && !isLoading && (
-              <div className="flex items-center justify-center h-full text-muted text-sm">
+              <div className="flex items-center justify-center h-full text-muted/60 text-sm">
                 Ask anything below
               </div>
             )}
@@ -165,10 +173,19 @@ export default function MobileCommandBar() {
             {messages.map((msg, i) => (
               <div
                 key={i}
-                className={msg.role === "user" ? "text-right" : ""}
+                className={`animate-[fadeSlideIn_200ms_ease-out] ${msg.role === "user" ? "text-right" : ""}`}
               >
                 {msg.role === "user" ? (
-                  <div className="inline-block text-sm text-foreground bg-accent/40 rounded-lg px-3 py-2 max-w-[85%] text-left">
+                  <div className="inline-block text-sm text-foreground bg-accent/60 rounded-lg px-3 py-2 max-w-[85%] text-left">
+                    {msg.content}
+                  </div>
+                ) : msg.role === "error" ? (
+                  <div className="flex items-start gap-2 text-sm text-muted italic">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 flex-shrink-0 opacity-60">
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="12" y1="8" x2="12" y2="12" />
+                      <line x1="12" y1="16" x2="12.01" y2="16" />
+                    </svg>
                     {msg.content}
                   </div>
                 ) : (
@@ -191,9 +208,6 @@ export default function MobileCommandBar() {
 
           {/* Bottom input bar */}
           <div className="border-t border-border/40 px-4 py-3 bg-background">
-            {error && (
-              <div className="mb-2 text-sm text-muted italic">{error}</div>
-            )}
             <div className="flex items-center gap-2">
               <input
                 ref={inputRef}

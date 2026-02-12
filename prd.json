@@ -430,7 +430,7 @@
         "Test: the command bar feels noticeably better after these changes. Remaining items in backlog are P2 polish only."
       ],
       "priority": 24,
-      "passes": false
+      "passes": true
     },
     {
       "id": "SM-025",

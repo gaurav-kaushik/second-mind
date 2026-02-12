@@ -150,7 +150,7 @@ export default function MemoryInspector({ onBack }: MemoryInspectorProps) {
             onClick={onBack}
             className="text-xs text-muted hover:text-foreground transition-colors"
           >
-            Back
+            ← Back
           </button>
         </div>
         <div className="space-y-1">
