@@ -1,4 +1,4 @@
-# Second Mind: Product Requirements Document
+# Second Mind
 
 **Author:** Gaurav (with Claude as Principal PM)
 **Version:** 0.1 -- Foundation Spec
