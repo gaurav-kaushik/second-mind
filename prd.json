@@ -282,7 +282,7 @@
         "Test: type '/memory', see 5 files listed, click Gaurav.md, see content, edit, save, verify change persists"
       ],
       "priority": 16,
-      "passes": false
+      "passes": true
     },
     {
       "id": "SM-017",

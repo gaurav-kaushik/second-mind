@@ -124,3 +124,13 @@
 - Send button with arrow icon for mobile (no Enter key on soft keyboard)
 - Scrollable message area above input, "New" button in top bar
 - No horizontal scroll (full-width layout with proper padding)
+
+## SM-016: Memory inspector view
+- MemoryInspector component with list/read/edit views
+- Triggered by '/memory' or 'show memory' in command bar
+- List view shows filename, description, version, date
+- Read view renders markdown content with Edit button
+- Edit view: resizable textarea with monospace font, Save/Cancel buttons
+- PATCH on save creates version history automatically
+- Integrated into both desktop CommandBar and MobileCommandBar
+- Denser visual feel: monospace font for editor, tighter spacing
