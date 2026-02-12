@@ -10,7 +10,15 @@ export async function POST(request: NextRequest) {
     const auth = await requireAuth();
     if (!auth.authenticated) return auth.response;
 
-    const body = await request.json();
+    let body: Record<string, unknown>;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        { error: "Invalid JSON in request body" },
+        { status: 400 }
+      );
+    }
 
     if (!body.message || typeof body.message !== "string" || body.message.trim() === "") {
       return NextResponse.json(

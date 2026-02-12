@@ -339,7 +339,7 @@
         "Test: send malformed requests to each API route and verify appropriate error codes, not 500s"
       ],
       "priority": 19,
-      "passes": false
+      "passes": true
     },
     {
       "id": "SM-020",

@@ -154,3 +154,12 @@
 - tests/api/memory.test.ts: CRUD with versioning
 - tests/api/command.test.ts: auth check on command endpoint
 - All tests pass
+
+## SM-019: Error handling and edge cases
+- Created lib/env.ts for required env var validation at startup
+- Added malformed JSON body handling in /api/command (400 instead of 500)
+- Audited all routes: all have top-level try/catch, no stack traces in responses
+- Router already handles API errors gracefully (falls back to defaults)
+- Question handler already catches errors and returns user-friendly messages
+- Client-side CommandBar shows gentle error messages and allows retry
+- /api/command returns 503 when Supabase unreachable, 400 for empty/missing message
