@@ -214,3 +214,15 @@
   - readability.spec.ts: body font-size >= 16px
 - All 20 E2E tests pass (8 desktop + 6 iPhone + 6 Pixel) in ~7s
 - Gotcha: devices['iPhone 14'] uses WebKit which requires separate install; using Chromium with mobile viewport instead
+
+## SM-023: UX audit and improvements backlog
+- Created scripts/ux-screenshots.ts using Playwright to capture 12 key screenshots
+- Screenshots saved to docs/ux-screenshots/ (login, landing, command bar states, memory inspector views, mobile views)
+- Used saved auth state from E2E tests to authenticate (avoids login redirect issues)
+- Created UX_IMPROVEMENTS_BACKLOG.md with 13 items across 3 priority tiers:
+  - P0 Critical (3): error state indistinguishable from responses, no open/close animation, no scroll affordance
+  - P1 Important (5): low contrast user bubbles, bare landing page, subtle "new conversation" button, no keyboard hints, navigation inconsistency
+  - P2 Polish (5): loading animation refinement, test data pollution, save feedback, mobile badge overlap, response fade-in
+- Evaluated against spec Section 5 design principles: paper feel, tactile interactions, information density, command bar primacy
+- Notable finding: error responses render as normal messages — violates "gentle error state" design goal
+- Gotcha: Playwright script must use storageState (not login flow) to avoid redirect timeout issues in headless mode
