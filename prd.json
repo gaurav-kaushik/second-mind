@@ -207,7 +207,7 @@
         "Test: open browser, press Cmd+K, type a question, see a response appear below the input"
       ],
       "priority": 12,
-      "passes": false
+      "passes": true
     },
     {
       "id": "SM-013",

@@ -90,3 +90,11 @@
 - Fetches manifest, calls routeCommand, dispatches to handleQuestion for "question" intent
 - Other intents return { status: "not_implemented", response: "coming soon" }
 - Returns 400 for empty/missing message, 503 if Supabase unreachable, 500 for unexpected errors
+
+## SM-012: Command bar UI
+- Created CommandBar component with Cmd+K toggle, centered modal overlay
+- Text input sends to POST /api/command on Enter
+- Animated "Thinking..." loading indicator
+- Response renders below input, Escape or click-outside closes
+- Auto-focus on open, body scroll prevention while open
+- Error states render as gentle muted text
