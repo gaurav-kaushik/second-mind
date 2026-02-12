@@ -376,7 +376,7 @@
         "Add test:e2e script to package.json and document in README"
       ],
       "priority": 21,
-      "passes": false
+      "passes": true
     },
     {
       "id": "SM-022",

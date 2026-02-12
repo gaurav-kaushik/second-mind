@@ -183,3 +183,20 @@
   | SUPABASE_ACCESS_TOKEN | GitHub Secrets | For supabase db push in CI/CD |
   | SUPABASE_DB_PASSWORD | GitHub Secrets | For supabase db push in CI/CD |
 - Gotcha: Tailwind v4 removed unused import warnings — useSyncExternalStore replaces useState+useEffect pattern for media queries
+
+## SM-021: Playwright setup and desktop E2E tests
+- Installed @playwright/test, installed Chromium browser
+- Created playwright.config.ts with webServer auto-start, desktop-chromium project, auth setup dependency
+- Global setup (tests/e2e/global-setup.ts) creates test user via Supabase admin API, seeds memory files, logs in via browser, saves storageState
+- 7 E2E tests (1 setup + 6 desktop):
+  - smoke.spec.ts: app loads, "Second Mind" and ⌘K visible
+  - command-bar.spec.ts: Cmd+K opens, type+Enter shows loading then response; Escape closes
+  - question-flow.spec.ts: submit question, verify response has text and markdown elements (p/ul/ol/li)
+  - conversation.spec.ts: multi-turn conversation, both user messages visible, 2+ assistant responses
+  - memory-inspector.spec.ts: /memory shows 5 files, click shows content
+  - memory-edit.spec.ts: edit Ideas.md, save, verify change persists across navigation
+- All 8 tests pass in ~4s
+- npm run test:e2e added to package.json
+- HTML report output to tests/e2e/results/
+- Gotcha: Playwright HTML reporter outputFolder must not be parent of testDir outputDir (causes conflict warning)
+- Gotcha: LLM-dependent tests work even with placeholder API key because error handler returns graceful text response
