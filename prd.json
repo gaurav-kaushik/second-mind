@@ -246,7 +246,7 @@
         "Test: ask a question, get response, ask follow-up referencing the response, get a contextually aware answer"
       ],
       "priority": 14,
-      "passes": false
+      "passes": true
     },
     {
       "id": "SM-015",

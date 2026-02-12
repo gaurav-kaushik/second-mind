@@ -1,21 +1,28 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import ReactMarkdown from "react-markdown";
+import MarkdownResponse from "./MarkdownResponse";
+
+interface Message {
+  role: "user" | "assistant";
+  content: string;
+}
 
 interface CommandBarProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+const MAX_HISTORY = 10;
+
 export default function CommandBar({ isOpen, onClose }: CommandBarProps) {
   const [input, setInput] = useState("");
-  const [response, setResponse] = useState("");
+  const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [showResponse, setShowResponse] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isOpen && inputRef.current) {
@@ -34,28 +41,49 @@ export default function CommandBar({ isOpen, onClose }: CommandBarProps) {
     };
   }, [isOpen]);
 
-  // Fade-in effect for response
+  // Auto-scroll to bottom when messages change
   useEffect(() => {
-    if (response && !isLoading) {
-      setShowResponse(false);
-      const timer = setTimeout(() => setShowResponse(true), 50);
-      return () => clearTimeout(timer);
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [response, isLoading]);
+  }, [messages, isLoading]);
+
+  const handleNewConversation = useCallback(() => {
+    setMessages([]);
+    setError("");
+    setInput("");
+    inputRef.current?.focus();
+  }, []);
 
   const handleSubmit = useCallback(async () => {
     if (!input.trim() || isLoading) return;
 
-    setIsLoading(true);
+    const userMessage = input.trim();
+    setInput("");
     setError("");
-    setResponse("");
-    setShowResponse(false);
+
+    // Add user message to conversation
+    const newMessages: Message[] = [
+      ...messages,
+      { role: "user", content: userMessage },
+    ];
+    setMessages(newMessages);
+    setIsLoading(true);
 
     try {
+      // Build history from last N exchanges
+      const history = newMessages
+        .slice(-MAX_HISTORY * 2)
+        .slice(0, -1) // Exclude the current message (sent separately)
+        .map((m) => ({ role: m.role, content: m.content }));
+
       const res = await fetch("/api/command", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: input.trim() }),
+        body: JSON.stringify({
+          message: userMessage,
+          history: history.length > 0 ? history : undefined,
+        }),
       });
 
       if (!res.ok) {
@@ -65,13 +93,18 @@ export default function CommandBar({ isOpen, onClose }: CommandBarProps) {
       }
 
       const data = await res.json();
-      setResponse(data.response || "No response received.");
+      const responseText = data.response || "No response received.";
+
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: responseText },
+      ]);
     } catch {
       setError("Could not reach the server. Please check your connection.");
     } finally {
       setIsLoading(false);
     }
-  }, [input, isLoading]);
+  }, [input, isLoading, messages]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -82,8 +115,13 @@ export default function CommandBar({ isOpen, onClose }: CommandBarProps) {
       if (e.key === "Escape") {
         onClose();
       }
+      // Cmd+Shift+K for new conversation
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "K") {
+        e.preventDefault();
+        handleNewConversation();
+      }
     },
-    [handleSubmit, onClose]
+    [handleSubmit, onClose, handleNewConversation]
   );
 
   const handleOverlayClick = useCallback(
@@ -101,10 +139,64 @@ export default function CommandBar({ isOpen, onClose }: CommandBarProps) {
     <div
       ref={overlayRef}
       onClick={handleOverlayClick}
-      className="fixed inset-0 z-50 flex items-start justify-center bg-black/10 backdrop-blur-[2px] pt-[20vh]"
+      className="fixed inset-0 z-50 flex items-start justify-center bg-black/10 backdrop-blur-[2px] pt-[15vh]"
     >
-      <div className="w-full max-w-[600px] mx-4 rounded-2xl bg-background shadow-[0_8px_40px_rgba(0,0,0,0.08)] border border-border/60">
-        <div className="p-6">
+      <div className="w-full max-w-[600px] mx-4 rounded-2xl bg-background shadow-[0_8px_40px_rgba(0,0,0,0.08)] border border-border/60 flex flex-col max-h-[70vh]">
+        {/* Header with new conversation button */}
+        {messages.length > 0 && (
+          <div className="flex items-center justify-end px-6 pt-4 pb-0">
+            <button
+              onClick={handleNewConversation}
+              className="text-xs text-muted hover:text-foreground transition-colors"
+              title="New conversation (⌘⇧K)"
+            >
+              New conversation
+            </button>
+          </div>
+        )}
+
+        {/* Scrollable message area */}
+        {messages.length > 0 && (
+          <div
+            ref={scrollRef}
+            className="flex-1 overflow-y-auto px-6 pt-3 pb-0 space-y-4 min-h-0"
+          >
+            {messages.map((msg, i) => (
+              <div
+                key={i}
+                className={`animate-in fade-in duration-300 ${
+                  msg.role === "user" ? "text-right" : ""
+                }`}
+              >
+                {msg.role === "user" ? (
+                  <div className="inline-block text-sm text-foreground bg-accent/40 rounded-lg px-3 py-2 max-w-[85%] text-left">
+                    {msg.content}
+                  </div>
+                ) : (
+                  <div className="max-w-none">
+                    <MarkdownResponse content={msg.content} />
+                  </div>
+                )}
+              </div>
+            ))}
+
+            {isLoading && (
+              <div className="flex items-center gap-0.5 text-muted text-sm pb-2">
+                <span className="animate-pulse">Thinking</span>
+                <span className="animate-pulse [animation-delay:200ms]">.</span>
+                <span className="animate-pulse [animation-delay:400ms]">.</span>
+                <span className="animate-pulse [animation-delay:600ms]">.</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Input area - always pinned at bottom */}
+        <div className="p-6 pt-4">
+          {error && (
+            <div className="mb-3 text-sm text-muted italic">{error}</div>
+          )}
+
           <input
             ref={inputRef}
             type="text"
@@ -114,111 +206,6 @@ export default function CommandBar({ isOpen, onClose }: CommandBarProps) {
             placeholder="Ask, store, search, or plan..."
             className="w-full bg-transparent text-foreground text-[16px] leading-6 outline-none placeholder:text-muted/60 border-b border-border/40 pb-3 font-sans"
           />
-
-          {isLoading && (
-            <div className="mt-4 flex items-center gap-0.5 text-muted text-sm">
-              <span className="animate-pulse">Thinking</span>
-              <span className="animate-pulse [animation-delay:200ms]">.</span>
-              <span className="animate-pulse [animation-delay:400ms]">.</span>
-              <span className="animate-pulse [animation-delay:600ms]">.</span>
-            </div>
-          )}
-
-          {error && (
-            <div className="mt-4 text-sm text-muted italic">
-              {error}
-            </div>
-          )}
-
-          {response && !isLoading && (
-            <div
-              className="mt-4 prose-sm max-w-none transition-opacity duration-300 ease-in-out"
-              style={{ opacity: showResponse ? 1 : 0 }}
-            >
-              <ReactMarkdown
-                components={{
-                  p: ({ children }) => (
-                    <p className="text-sm leading-relaxed text-foreground mb-3 last:mb-0">
-                      {children}
-                    </p>
-                  ),
-                  h1: ({ children }) => (
-                    <h1 className="text-lg font-semibold text-foreground mt-4 mb-2 first:mt-0">
-                      {children}
-                    </h1>
-                  ),
-                  h2: ({ children }) => (
-                    <h2 className="text-base font-semibold text-foreground mt-4 mb-2 first:mt-0">
-                      {children}
-                    </h2>
-                  ),
-                  h3: ({ children }) => (
-                    <h3 className="text-sm font-semibold text-foreground mt-3 mb-1">
-                      {children}
-                    </h3>
-                  ),
-                  ul: ({ children }) => (
-                    <ul className="text-sm leading-relaxed text-foreground list-disc pl-5 mb-3 space-y-1">
-                      {children}
-                    </ul>
-                  ),
-                  ol: ({ children }) => (
-                    <ol className="text-sm leading-relaxed text-foreground list-decimal pl-5 mb-3 space-y-1">
-                      {children}
-                    </ol>
-                  ),
-                  li: ({ children }) => (
-                    <li className="text-sm leading-relaxed text-foreground">
-                      {children}
-                    </li>
-                  ),
-                  strong: ({ children }) => (
-                    <strong className="font-semibold">{children}</strong>
-                  ),
-                  em: ({ children }) => (
-                    <em className="italic">{children}</em>
-                  ),
-                  code: ({ children, className }) => {
-                    const isBlock = className?.includes("language-");
-                    if (isBlock) {
-                      return (
-                        <code className="block bg-accent/50 rounded-lg p-3 text-xs font-mono text-foreground overflow-x-auto my-3">
-                          {children}
-                        </code>
-                      );
-                    }
-                    return (
-                      <code className="bg-accent/50 rounded px-1 py-0.5 text-xs font-mono text-foreground">
-                        {children}
-                      </code>
-                    );
-                  },
-                  pre: ({ children }) => (
-                    <pre className="bg-accent/50 rounded-lg p-3 overflow-x-auto my-3">
-                      {children}
-                    </pre>
-                  ),
-                  a: ({ href, children }) => (
-                    <a
-                      href={href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-foreground underline underline-offset-2 decoration-border hover:decoration-foreground transition-colors"
-                    >
-                      {children}
-                    </a>
-                  ),
-                  blockquote: ({ children }) => (
-                    <blockquote className="border-l-2 border-border pl-3 text-muted italic my-3">
-                      {children}
-                    </blockquote>
-                  ),
-                }}
-              >
-                {response}
-              </ReactMarkdown>
-            </div>
-          )}
         </div>
       </div>
     </div>

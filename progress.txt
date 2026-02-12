@@ -107,3 +107,11 @@
 - Minimal input styling: subtle bottom border, blends with background
 - No bright blue anywhere — all warm grays and tans
 - Links open in new tab, styled with warm underline
+
+## SM-014: Conversation threading
+- Messages array tracks user/assistant exchanges in CommandBar
+- User messages right-aligned with accent background, assistant uses MarkdownResponse
+- Last 10 exchanges sent as history in POST /api/command
+- Cmd+Shift+K or "New conversation" button resets history
+- Scrollable message area with input pinned at bottom
+- Extracted MarkdownResponse into separate component for reuse
