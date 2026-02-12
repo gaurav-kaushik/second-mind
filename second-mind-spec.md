@@ -1,4 +1,4 @@
-# Second Mind
+# Second Mind: Spec Document
 
 **Author:** Gaurav (with Claude as Principal PM)
 **Version:** 0.1 -- Foundation Spec

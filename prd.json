@@ -6,14 +6,14 @@
     {
       "id": "SM-001",
       "title": "Discovery and environment verification",
-      "description": "This repo starts nearly empty: just a README.md plus the Ralph loop files (prd.json, prompt.md, progress.txt, second-mind-prd.md). Before building anything, verify the development environment is ready and document what exists. This is the foundation everything else builds on -- if Node is the wrong version or Supabase CLI is missing, every subsequent story fails.",
+      "description": "This repo starts nearly empty: just a README.md plus the Ralph loop files (prd.json, prompt.md, progress.txt, second-mind-spec.md). Before building anything, verify the development environment is ready and document what exists. This is the foundation everything else builds on -- if Node is the wrong version or Supabase CLI is missing, every subsequent story fails.",
       "acceptance_criteria": [
         "Verify Node.js >= 20 is available. Log the version to progress.txt. If not available, document the failure and stop.",
         "Verify npm is available. Log the version.",
         "Verify npx supabase --version works (Supabase CLI is installed). Log the version. If missing, install it via npm install -g supabase.",
         "Verify Docker is running (required for local Supabase). Log confirmation.",
         "Document the starting state of the repo in progress.txt: list all files present, note that this is a greenfield project",
-        "Read second-mind-prd.md and confirm you understand the architecture (note key decisions in progress.txt: Next.js App Router, Supabase + pgvector, Anthropic Claude API, Tailwind)",
+        "Read second-mind-spec.md and confirm you understand the architecture (note key decisions in progress.txt: Next.js App Router, Supabase + pgvector, Anthropic Claude API, Tailwind)",
         "No code changes in this story -- discovery only"
       ],
       "priority": 1,
@@ -25,7 +25,7 @@
       "description": "Initialize the Next.js project. The repo already has files in the root (prd.json, prompt.md, etc.) so create-next-app needs to be run carefully: either use --yes and accept the existing directory, or scaffold in a temp directory and move files. Preserve all existing Ralph loop files. Set up the base Tailwind config with the warm neutral palette from the design spec.",
       "acceptance_criteria": [
         "Next.js 14+ app with App Router is initialized in the repo root",
-        "All pre-existing files preserved: prd.json, prompt.md, progress.txt, second-mind-prd.md, README.md",
+        "All pre-existing files preserved: prd.json, prompt.md, progress.txt, second-mind-spec.md, README.md",
         "TypeScript strict mode enabled in tsconfig.json",
         "Tailwind CSS installed and configured with warm neutral palette in tailwind.config.ts (colors: background #faf8f5, foreground #1a1a1a, muted #6b6b6b, accent #e8e4df, border #d4d0cb)",
         "Directory structure created: lib/, components/, app/api/, types/, scripts/",
@@ -102,7 +102,7 @@
     {
       "id": "SM-007",
       "title": "Seed memory files",
-      "description": "Create a seed script that populates the memory_files table with 5 initial markdown briefing documents. Each file should have realistic placeholder content following the template in second-mind-prd.md Appendix A. The content should be structured with H2 sections and include example entries that demonstrate the expected format.",
+      "description": "Create a seed script that populates the memory_files table with 5 initial markdown briefing documents. Each file should have realistic placeholder content following the template in second-mind-spec.md Appendix A. The content should be structured with H2 sections and include example entries that demonstrate the expected format.",
       "acceptance_criteria": [
         "Seed script at scripts/seed-memory.ts, runnable with npx tsx scripts/seed-memory.ts",
         "Script is idempotent: running it twice does not create duplicates (upsert on filename)",
@@ -142,7 +142,7 @@
         "@anthropic-ai/sdk installed and configured",
         "Router calls Claude with a system prompt that includes the manifest and instructions to return JSON with: intent, memoryFilesNeeded, actionDetails",
         "System prompt instructs the model to always include Gaurav.md for question and task intents",
-        "Router model configurable via ROUTER_MODEL env var, defaults to claude-haiku-4-5-20241022",
+        "Router model configurable via ROUTER_MODEL env var, defaults to claude-haiku-4-5-20251001",
         "Router handles API errors gracefully: returns a sensible default (intent: 'question', all memory files) rather than crashing",
         "Router response is parsed and validated: if the LLM returns malformed JSON, retry once, then fall back to defaults",
         "Test: call routeCommand('what should I read next?', manifest) -- expect intent 'question', memoryFilesNeeded includes Reading.md and Taste.md",
@@ -162,7 +162,7 @@
         "lib/handlers/question.ts exports handleQuestion(message: string, memoryFiles: string[], history?: ChatMessage[]): Promise<string>",
         "Handler fetches the content of each requested memory file from the database",
         "Handler constructs a system prompt that includes: a brief identity statement ('You are Second Mind, a personal intelligence system'), the content of each loaded memory file clearly delineated with headers, and instructions to respond naturally using the context without explicitly referencing the files",
-        "Handler calls Claude (generation model, configurable via GENERATION_MODEL env var, defaults to claude-sonnet-4-5-20250514) with the system prompt, user message, and optional conversation history",
+        "Handler calls Claude (generation model, configurable via GENERATION_MODEL env var, defaults to claude-sonnet-4-5-20250929) with the system prompt, user message, and optional conversation history",
         "Handler supports conversation history as an array of {role, content} pairs, passed as prior messages to Claude",
         "Response is returned as a string (markdown formatted)",
         "Handler errors are caught and returned as user-friendly error messages, not stack traces",
@@ -212,7 +212,7 @@
     {
       "id": "SM-013",
       "title": "Command bar UI: paper feel design",
-      "description": "Apply the 'paper feel' design language to the command bar and response area. This is about typography, color, whitespace, and animation. The interface should feel like reading on paper, not using a SaaS app. Reference the Tailwind palette from SM-001 and the design principles in second-mind-prd.md Section 5.",
+      "description": "Apply the 'paper feel' design language to the command bar and response area. This is about typography, color, whitespace, and animation. The interface should feel like reading on paper, not using a SaaS app. Reference the Tailwind palette from SM-001 and the design principles in second-mind-spec.md Section 5.",
       "acceptance_criteria": [
         "Font stack: use a readable humanist sans-serif (Inter or system-ui) at 16px base for body text. Import via next/font if using Inter.",
         "Modal background: warm off-white (#faf8f5 or tailwind 'background' color from config)",
@@ -400,13 +400,13 @@
     {
       "id": "SM-023",
       "title": "UX audit and improvements backlog",
-      "description": "Run through every user-facing flow manually via Playwright (or by reading the E2E test results and screenshots) and document UX issues, rough edges, and improvement ideas. The output is a UX_IMPROVEMENTS_BACKLOG.md file with prioritized issues. This is the retrospective on the UI work: what feels wrong, what is missing, what would make it delightful. The agent should use Playwright to take screenshots of every key state (empty state, loading, response, error, memory inspector list, memory editor, mobile views) and evaluate them against the design principles in second-mind-prd.md Section 5.",
+      "description": "Run through every user-facing flow manually via Playwright (or by reading the E2E test results and screenshots) and document UX issues, rough edges, and improvement ideas. The output is a UX_IMPROVEMENTS_BACKLOG.md file with prioritized issues. This is the retrospective on the UI work: what feels wrong, what is missing, what would make it delightful. The agent should use Playwright to take screenshots of every key state (empty state, loading, response, error, memory inspector list, memory editor, mobile views) and evaluate them against the design principles in second-mind-spec.md Section 5.",
       "acceptance_criteria": [
         "Script at scripts/ux-screenshots.ts uses Playwright to capture screenshots of every key UI state: landing page, command bar open (empty), command bar with response, command bar with conversation thread, loading state, error state, memory inspector list view, memory inspector file view, memory inspector edit view, mobile command bar, mobile conversation, mobile memory inspector",
         "Screenshots saved to docs/ux-screenshots/ with descriptive filenames",
         "UX_IMPROVEMENTS_BACKLOG.md created in repo root with sections: Critical (blocks usability), Important (degrades experience), Polish (nice to have)",
         "Each backlog item has: issue description, which screen/flow it affects, what the fix should look like, priority (P0/P1/P2)",
-        "Backlog evaluates against second-mind-prd.md Section 5 design principles: paper feel, tactile interactions, information density, command bar primacy",
+        "Backlog evaluates against second-mind-spec.md Section 5 design principles: paper feel, tactile interactions, information density, command bar primacy",
         "Backlog includes at minimum: typography assessment (is the font right? sizes?), color assessment (warm enough? any stray blues?), animation assessment (fade-in working? feels good?), spacing assessment (generous enough?), mobile assessment (touch targets big enough? keyboard handling?), error state assessment (gentle enough?)",
         "Backlog has at least 5 actionable items (if the UI is perfect, the agent is not looking hard enough)",
         "Test: UX_IMPROVEMENTS_BACKLOG.md exists and has structured, actionable items with priorities"
