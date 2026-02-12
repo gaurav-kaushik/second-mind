@@ -263,7 +263,7 @@
         "Test: open in Chrome DevTools mobile emulator (iPhone 14 and Pixel 7 sizes), verify the experience is usable"
       ],
       "priority": 15,
-      "passes": false
+      "passes": true
     },
     {
       "id": "SM-016",

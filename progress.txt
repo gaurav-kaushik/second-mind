@@ -115,3 +115,12 @@
 - Cmd+Shift+K or "New conversation" button resets history
 - Scrollable message area with input pinned at bottom
 - Extracted MarkdownResponse into separate component for reuse
+
+## SM-015: Mobile responsive command bar
+- MobileCommandBar renders persistent bottom input bar on viewports < 768px
+- useMediaQuery hook for responsive switching between desktop modal and mobile layout
+- Input bar 44px min-height for touch targets, 16px text (no zoom)
+- visualViewport API handles virtual keyboard resize
+- Send button with arrow icon for mobile (no Enter key on soft keyboard)
+- Scrollable message area above input, "New" button in top bar
+- No horizontal scroll (full-width layout with proper padding)

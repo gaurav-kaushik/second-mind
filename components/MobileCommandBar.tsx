@@ -1,0 +1,206 @@
+"use client";
+
+import { useState, useEffect, useRef, useCallback } from "react";
+import MarkdownResponse from "./MarkdownResponse";
+
+interface Message {
+  role: "user" | "assistant";
+  content: string;
+}
+
+const MAX_HISTORY = 10;
+
+export default function MobileCommandBar() {
+  const [input, setInput] = useState("");
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages, isLoading]);
+
+  // Handle virtual keyboard resize
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+
+    const handleResize = () => {
+      document.documentElement.style.setProperty(
+        "--viewport-height",
+        `${viewport.height}px`
+      );
+    };
+
+    handleResize();
+    viewport.addEventListener("resize", handleResize);
+    return () => viewport.removeEventListener("resize", handleResize);
+  }, []);
+
+  const handleNewConversation = useCallback(() => {
+    setMessages([]);
+    setError("");
+    setInput("");
+    inputRef.current?.focus();
+  }, []);
+
+  const handleSubmit = useCallback(async () => {
+    if (!input.trim() || isLoading) return;
+
+    const userMessage = input.trim();
+    setInput("");
+    setError("");
+
+    const newMessages: Message[] = [
+      ...messages,
+      { role: "user", content: userMessage },
+    ];
+    setMessages(newMessages);
+    setIsLoading(true);
+
+    try {
+      const history = newMessages
+        .slice(-MAX_HISTORY * 2)
+        .slice(0, -1)
+        .map((m) => ({ role: m.role, content: m.content }));
+
+      const res = await fetch("/api/command", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: userMessage,
+          history: history.length > 0 ? history : undefined,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || "Something went wrong. Please try again.");
+        return;
+      }
+
+      const data = await res.json();
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: data.response || "No response received." },
+      ]);
+    } catch {
+      setError("Could not reach the server. Please check your connection.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [input, isLoading, messages]);
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        handleSubmit();
+      }
+    },
+    [handleSubmit]
+  );
+
+  return (
+    <div
+      className="flex flex-col w-full"
+      style={{ height: "var(--viewport-height, 100dvh)" }}
+    >
+      {/* Top bar */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border/40">
+        <h1 className="text-base font-light tracking-tight text-foreground">
+          Second Mind
+        </h1>
+        {messages.length > 0 && (
+          <button
+            onClick={handleNewConversation}
+            className="text-xs text-muted hover:text-foreground transition-colors"
+          >
+            New
+          </button>
+        )}
+      </div>
+
+      {/* Scrollable message area */}
+      <div
+        ref={scrollRef}
+        className="flex-1 overflow-y-auto px-4 py-4 space-y-4 min-h-0"
+      >
+        {messages.length === 0 && !isLoading && (
+          <div className="flex items-center justify-center h-full text-muted text-sm">
+            Ask anything below
+          </div>
+        )}
+
+        {messages.map((msg, i) => (
+          <div
+            key={i}
+            className={msg.role === "user" ? "text-right" : ""}
+          >
+            {msg.role === "user" ? (
+              <div className="inline-block text-sm text-foreground bg-accent/40 rounded-lg px-3 py-2 max-w-[85%] text-left">
+                {msg.content}
+              </div>
+            ) : (
+              <div className="max-w-none">
+                <MarkdownResponse content={msg.content} />
+              </div>
+            )}
+          </div>
+        ))}
+
+        {isLoading && (
+          <div className="flex items-center gap-0.5 text-muted text-sm">
+            <span className="animate-pulse">Thinking</span>
+            <span className="animate-pulse [animation-delay:200ms]">.</span>
+            <span className="animate-pulse [animation-delay:400ms]">.</span>
+            <span className="animate-pulse [animation-delay:600ms]">.</span>
+          </div>
+        )}
+      </div>
+
+      {/* Bottom input bar */}
+      <div className="border-t border-border/40 px-4 py-3 bg-background">
+        {error && (
+          <div className="mb-2 text-sm text-muted italic">{error}</div>
+        )}
+        <div className="flex items-center gap-2">
+          <input
+            ref={inputRef}
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Ask, store, search, or plan..."
+            className="flex-1 bg-transparent text-foreground text-[16px] leading-6 outline-none placeholder:text-muted/60 font-sans min-h-[44px]"
+          />
+          <button
+            onClick={handleSubmit}
+            disabled={!input.trim() || isLoading}
+            className="text-muted hover:text-foreground disabled:opacity-30 transition-colors p-2 min-w-[44px] min-h-[44px] flex items-center justify-center"
+            aria-label="Send"
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <line x1="22" y1="2" x2="11" y2="13" />
+              <polygon points="22 2 15 22 11 13 2 9 22 2" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
