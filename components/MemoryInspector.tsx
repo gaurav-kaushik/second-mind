@@ -24,9 +24,10 @@ type View = "list" | "read" | "edit";
 
 interface MemoryInspectorProps {
   onBack: () => void;
+  initialFile?: string;
 }
 
-export default function MemoryInspector({ onBack }: MemoryInspectorProps) {
+export default function MemoryInspector({ onBack, initialFile }: MemoryInspectorProps) {
   const [files, setFiles] = useState<MemoryFileItem[]>([]);
   const [selectedFile, setSelectedFile] = useState<MemoryFileDetail | null>(null);
   const [view, setView] = useState<View>("list");
@@ -70,6 +71,13 @@ export default function MemoryInspector({ onBack }: MemoryInspectorProps) {
       setIsLoading(false);
     }
   }, []);
+
+  // Auto-open a specific file when initialFile is provided
+  useEffect(() => {
+    if (initialFile) {
+      fetchFile(initialFile);
+    }
+  }, [initialFile, fetchFile]);
 
   const handleEdit = useCallback(() => {
     if (selectedFile) {

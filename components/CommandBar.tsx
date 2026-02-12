@@ -29,6 +29,7 @@ export default function CommandBar({ isOpen, onClose, initialPrompt, onInitialPr
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showMemoryInspector, setShowMemoryInspector] = useState(false);
+  const [memoryInitialFile, setMemoryInitialFile] = useState<string | undefined>();
   const [canScrollUp, setCanScrollUp] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -44,6 +45,7 @@ export default function CommandBar({ isOpen, onClose, initialPrompt, onInitialPr
   useEffect(() => {
     if (isOpen) {
       setShowMemoryInspector(false);
+      setMemoryInitialFile(undefined);
     }
   }, [isOpen]);
 
@@ -74,6 +76,7 @@ export default function CommandBar({ isOpen, onClose, initialPrompt, onInitialPr
     setMessages([]);
     setInput("");
     setShowMemoryInspector(false);
+    setMemoryInitialFile(undefined);
     setCanScrollUp(false);
     inputRef.current?.focus();
   }, []);
@@ -120,6 +123,15 @@ export default function CommandBar({ isOpen, onClose, initialPrompt, onInitialPr
       }
 
       const data = await res.json();
+
+      // Route memory_inspect intent to the Memory Inspector UI
+      if (data.intent === "memory_inspect") {
+        const targetFile = data.actionDetails?.targetFile as string | undefined;
+        setMemoryInitialFile(targetFile);
+        setShowMemoryInspector(true);
+        return;
+      }
+
       setMessages((prev) => [
         ...prev,
         { role: "assistant", content: data.response || "No response received." },
@@ -187,14 +199,16 @@ export default function CommandBar({ isOpen, onClose, initialPrompt, onInitialPr
       className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] animate-[overlayIn_200ms_ease-out]"
       style={{ backgroundColor: "rgba(0,0,0,0.1)", backdropFilter: "blur(2px)" }}
     >
-      <div className="w-full max-w-[600px] mx-4 rounded-2xl bg-background shadow-[0_8px_40px_rgba(0,0,0,0.08)] border border-border/60 flex flex-col max-h-[70vh] animate-[modalIn_200ms_ease-out]">
+      <div className="w-full max-w-[600px] mx-4 rounded-2xl bg-background shadow-[0_8px_40px_rgba(0,0,0,0.08)] border border-border/60 flex flex-col max-h-[70vh] animate-[modalIn_200ms_ease-out] relative">
         {showMemoryInspector ? (
           <div className="p-6 overflow-y-auto flex-1 min-h-0">
             <MemoryInspector
               onBack={() => {
                 setShowMemoryInspector(false);
+                setMemoryInitialFile(undefined);
                 setTimeout(() => inputRef.current?.focus(), 50);
               }}
+              initialFile={memoryInitialFile}
             />
           </div>
         ) : (
@@ -216,15 +230,18 @@ export default function CommandBar({ isOpen, onClose, initialPrompt, onInitialPr
             )}
 
             {messages.length > 0 && (
-              <div className="relative flex-1 min-h-0">
-                {canScrollUp && (
-                  <div className="absolute top-0 left-0 right-0 h-6 bg-gradient-to-b from-background to-transparent z-10 pointer-events-none rounded-t-2xl" />
-                )}
+              <div
+                ref={scrollRef}
+                onScroll={handleScroll}
+                className="flex-1 min-h-0 overflow-y-auto px-6 pb-4"
+              >
+                {/* Top fade gradient — sticky, spans full width via negative margin */}
                 <div
-                  ref={scrollRef}
-                  onScroll={handleScroll}
-                  className="h-full overflow-y-auto px-6 pt-3 pb-0 space-y-4"
-                >
+                  className={`sticky top-0 -mx-6 h-10 bg-gradient-to-b from-background to-transparent pointer-events-none z-10 transition-opacity duration-150 ${canScrollUp ? "opacity-100" : "opacity-0"}`}
+                  style={{ marginBottom: "-2.5rem" }}
+                />
+
+                <div className="space-y-4 pt-3">
                   {messages.map((msg, i) => (
                     <div
                       key={i}
@@ -263,7 +280,7 @@ export default function CommandBar({ isOpen, onClose, initialPrompt, onInitialPr
               </div>
             )}
 
-            <div className="p-6 pt-4">
+            <div className="shrink-0 p-6 pt-4">
               <input
                 ref={inputRef}
                 type="text"

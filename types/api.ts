@@ -21,6 +21,7 @@ export interface CommandResponse {
   memoryFilesUsed: string[];
   response: string;
   status?: "not_implemented";
+  actionDetails?: Record<string, unknown>;
 }
 
 export interface RouterResult {

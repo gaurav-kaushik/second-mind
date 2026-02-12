@@ -22,6 +22,7 @@ export default function MobileCommandBar() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showMemoryInspector, setShowMemoryInspector] = useState(false);
+  const [memoryInitialFile, setMemoryInitialFile] = useState<string | undefined>();
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -51,6 +52,7 @@ export default function MobileCommandBar() {
     setMessages([]);
     setInput("");
     setShowMemoryInspector(false);
+    setMemoryInitialFile(undefined);
     inputRef.current?.focus();
   }, []);
 
@@ -100,6 +102,15 @@ export default function MobileCommandBar() {
       }
 
       const data = await res.json();
+
+      // Route memory_inspect intent to the Memory Inspector UI
+      if (data.intent === "memory_inspect") {
+        const targetFile = data.actionDetails?.targetFile as string | undefined;
+        setMemoryInitialFile(targetFile);
+        setShowMemoryInspector(true);
+        return;
+      }
+
       setMessages((prev) => [
         ...prev,
         { role: "assistant", content: data.response || "No response received." },
@@ -153,8 +164,10 @@ export default function MobileCommandBar() {
           <MemoryInspector
             onBack={() => {
               setShowMemoryInspector(false);
+              setMemoryInitialFile(undefined);
               setTimeout(() => inputRef.current?.focus(), 50);
             }}
+            initialFile={memoryInitialFile}
           />
         </div>
       ) : (

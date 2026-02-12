@@ -48,6 +48,16 @@ export async function POST(request: NextRequest) {
     // Route the command
     const routerResult = await routeCommand(message, manifest);
 
+    // Short-circuit memory_inspect — no need to call Sonnet
+    if (routerResult.intent === "memory_inspect") {
+      return NextResponse.json({
+        intent: "memory_inspect",
+        memoryFilesUsed: [],
+        response: "",
+        actionDetails: routerResult.actionDetails,
+      } satisfies CommandResponse);
+    }
+
     // Handle based on intent
     // For now, all intents fall through to the question handler since
     // store/task/search/status are not yet implemented. The question handler

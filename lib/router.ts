@@ -39,7 +39,7 @@ Rules:
 - For "question" and "task" intents, ALWAYS include Gaurav.md in memoryFilesNeeded.
 - Select only the memory files that are relevant to the request.
 - For "store" intent, include the memory file(s) where the stored content would be referenced.
-- For "memory_inspect" intent, memoryFilesNeeded can be empty.
+- For "memory_inspect" intent, memoryFilesNeeded can be empty. If the user mentions a specific file by name (e.g. "Show me Gaurav.md", "Open my reading notes"), include {"targetFile": "Filename.md"} in actionDetails matching the closest memory file name.
 - For "status" intent, memoryFilesNeeded can be empty.
 - For "search" intent, include memory files that might provide context for ranking results.
 
