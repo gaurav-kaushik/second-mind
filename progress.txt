@@ -143,3 +143,14 @@
 - RLS migration enables row-level security on all 5 tables
 - scripts/create-user.ts creates users via admin API
 - Verified: /api/command and /api/memory return 401 without auth, /api/health stays public
+
+## SM-018: Testing infrastructure
+- Installed Vitest with path aliases matching tsconfig
+- npm run test runs all tests (14 tests, 5 files)
+- tests/helpers.ts sets up Supabase client with service role key
+- tests/router.test.ts: validates router structure and intent types
+- tests/handlers/question.test.ts: verifies memory file loading from DB
+- tests/api/health.test.ts: health returns ok
+- tests/api/memory.test.ts: CRUD with versioning
+- tests/api/command.test.ts: auth check on command endpoint
+- All tests pass

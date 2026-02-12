@@ -321,7 +321,7 @@
         "Test commands documented in README"
       ],
       "priority": 18,
-      "passes": false
+      "passes": true
     },
     {
       "id": "SM-019",
