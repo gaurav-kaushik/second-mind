@@ -49,28 +49,19 @@ export async function POST(request: NextRequest) {
     const routerResult = await routeCommand(message, manifest);
 
     // Handle based on intent
-    if (routerResult.intent === "question") {
-      const response = await handleQuestion(
-        message,
-        routerResult.memoryFilesNeeded,
-        history
-      );
+    // For now, all intents fall through to the question handler since
+    // store/task/search/status are not yet implemented. The question handler
+    // loads relevant memory files and produces a useful response regardless.
+    const response = await handleQuestion(
+      message,
+      routerResult.memoryFilesNeeded,
+      history
+    );
 
-      const result: CommandResponse = {
-        intent: "question",
-        memoryFilesUsed: routerResult.memoryFilesNeeded,
-        response,
-      };
-
-      return NextResponse.json(result);
-    }
-
-    // Other intents: not yet implemented
     const result: CommandResponse = {
       intent: routerResult.intent,
       memoryFilesUsed: routerResult.memoryFilesNeeded,
-      response: "This capability is coming soon.",
-      status: "not_implemented",
+      response,
     };
 
     return NextResponse.json(result);

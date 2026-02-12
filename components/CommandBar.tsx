@@ -12,6 +12,8 @@ interface Message {
 interface CommandBarProps {
   isOpen: boolean;
   onClose: () => void;
+  initialPrompt?: string;
+  onInitialPromptConsumed?: () => void;
 }
 
 const MAX_HISTORY = 10;
@@ -22,7 +24,7 @@ function isMemoryCommand(input: string): boolean {
   return MEMORY_COMMANDS.some((cmd) => normalized === cmd || normalized.startsWith(cmd));
 }
 
-export default function CommandBar({ isOpen, onClose }: CommandBarProps) {
+export default function CommandBar({ isOpen, onClose, initialPrompt, onInitialPromptConsumed }: CommandBarProps) {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -37,6 +39,13 @@ export default function CommandBar({ isOpen, onClose }: CommandBarProps) {
       inputRef.current.focus();
     }
   }, [isOpen, showMemoryInspector]);
+
+  // Reset memory inspector when reopening
+  useEffect(() => {
+    if (isOpen) {
+      setShowMemoryInspector(false);
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen) {
@@ -69,11 +78,7 @@ export default function CommandBar({ isOpen, onClose }: CommandBarProps) {
     inputRef.current?.focus();
   }, []);
 
-  const handleSubmit = useCallback(async () => {
-    if (!input.trim() || isLoading) return;
-
-    const userMessage = input.trim();
-
+  const submitMessage = useCallback(async (userMessage: string, currentMessages: Message[]) => {
     if (isMemoryCommand(userMessage)) {
       setInput("");
       setShowMemoryInspector(true);
@@ -83,7 +88,7 @@ export default function CommandBar({ isOpen, onClose }: CommandBarProps) {
     setInput("");
 
     const newMessages: Message[] = [
-      ...messages,
+      ...currentMessages,
       { role: "user", content: userMessage },
     ];
     setMessages(newMessages);
@@ -127,7 +132,21 @@ export default function CommandBar({ isOpen, onClose }: CommandBarProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [input, isLoading, messages]);
+  }, []);
+
+  const handleSubmit = useCallback(async () => {
+    if (!input.trim() || isLoading) return;
+    submitMessage(input.trim(), messages);
+  }, [input, isLoading, messages, submitMessage]);
+
+  // Handle initial prompt from prompt pills
+  useEffect(() => {
+    if (isOpen && initialPrompt && !isLoading) {
+      setMessages([]);
+      submitMessage(initialPrompt, []);
+      onInitialPromptConsumed?.();
+    }
+  }, [isOpen, initialPrompt, onInitialPromptConsumed, submitMessage, isLoading]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {

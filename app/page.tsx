@@ -13,6 +13,7 @@ const EXAMPLE_PROMPTS = [
 
 export default function Home() {
   const [isCommandBarOpen, setIsCommandBarOpen] = useState(false);
+  const [initialPrompt, setInitialPrompt] = useState<string | undefined>();
   const isMobile = useMediaQuery("(max-width: 767px)");
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -51,7 +52,10 @@ export default function Home() {
           {EXAMPLE_PROMPTS.map((prompt) => (
             <button
               key={prompt}
-              onClick={() => setIsCommandBarOpen(true)}
+              onClick={() => {
+                setInitialPrompt(prompt);
+                setIsCommandBarOpen(true);
+              }}
               className="text-xs text-muted/60 hover:text-muted border border-border/30 hover:border-border/60 rounded-full px-3 py-1.5 transition-colors"
             >
               {prompt}
@@ -63,6 +67,8 @@ export default function Home() {
       <CommandBar
         isOpen={isCommandBarOpen}
         onClose={() => setIsCommandBarOpen(false)}
+        initialPrompt={initialPrompt}
+        onInitialPromptConsumed={() => setInitialPrompt(undefined)}
       />
     </div>
   );
