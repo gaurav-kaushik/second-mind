@@ -131,7 +131,7 @@
         "Test: seed the DB, GET /api/memory returns 5 items without content. GET /api/memory/Gaurav.md returns content. PATCH /api/memory/Gaurav.md with new content, then GET returns new content. Query memory_file_versions to confirm old version was saved."
       ],
       "priority": 8,
-      "passes": false
+      "passes": true
     },
     {
       "id": "SM-009",

@@ -61,3 +61,10 @@
 - Each has realistic content with H2 sections and example entries
 - Idempotent via upsert on filename
 - Requires env vars exported before running (not auto-loaded from .env.local)
+
+## SM-008: Memory file API routes
+- GET /api/memory returns list without content (lightweight)
+- GET /api/memory/[filename] returns full file with content
+- PATCH /api/memory/[filename] saves version history, increments version, updates content
+- Proper 404 for nonexistent files, 400 for missing content
+- All routes use server Supabase client
