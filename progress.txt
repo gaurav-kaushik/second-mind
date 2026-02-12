@@ -77,3 +77,10 @@
 - Parses JSON from LLM response, retries once on malformed JSON, falls back to defaults
 - Graceful error handling: returns all-files default on API failure
 - Note: live testing requires real ANTHROPIC_API_KEY (currently placeholder)
+
+## SM-010: Question handler
+- Created lib/handlers/question.ts with handleQuestion(message, memoryFiles, history?)
+- Loads memory file content from DB, constructs system prompt with context
+- Uses generation model (configurable via GENERATION_MODEL, defaults to Sonnet)
+- Supports conversation history as array of {role, content} pairs
+- Error handling returns user-friendly messages, not stack traces

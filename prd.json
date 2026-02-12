@@ -169,7 +169,7 @@
         "Test: call handleQuestion('what should I read next?', ['Gaurav.md', 'Reading.md', 'Taste.md']) and verify the response references information from the seeded memory files"
       ],
       "priority": 10,
-      "passes": false
+      "passes": true
     },
     {
       "id": "SM-011",
