@@ -227,7 +227,7 @@
         "Test: visual inspection -- the command bar should feel calm, warm, and readable"
       ],
       "priority": 13,
-      "passes": false
+      "passes": true
     },
     {
       "id": "SM-014",

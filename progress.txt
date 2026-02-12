@@ -98,3 +98,12 @@
 - Response renders below input, Escape or click-outside closes
 - Auto-focus on open, body scroll prevention while open
 - Error states render as gentle muted text
+
+## SM-013: Paper feel design
+- Warm off-white background (#faf8f5), near-black text, soft shadow, backdrop blur
+- Rounded corners (16px), generous padding (24px)
+- ReactMarkdown renders bold, italic, headers, lists, code, links, blockquotes
+- Response fade-in animation (opacity 0->1, 300ms ease-in-out)
+- Minimal input styling: subtle bottom border, blends with background
+- No bright blue anywhere — all warm grays and tans
+- Links open in new tab, styled with warm underline
