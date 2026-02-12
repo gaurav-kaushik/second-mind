@@ -1,2 +1,13 @@
 # Second Mind -- Progress Log
 # Append-only. Each iteration writes what was built, learned, and gotchas.
+
+## SM-001: Discovery and environment verification
+- Node.js: v25.6.0 (>= 20 ✓)
+- npm: 11.9.0 ✓
+- Supabase CLI: 2.75.0 ✓
+- Docker: 29.2.0, running ✓
+- Starting repo files: README.md, prd.json, prompt.md, progress.txt, second-mind-spec.md, preflight.sh, .git/, .claude/
+- This is a greenfield project — no app code exists yet
+- Architecture confirmed from spec: Next.js App Router, Supabase + pgvector, Anthropic Claude API, Tailwind CSS
+- Key decisions: Cmd+K command bar UI, memory files as markdown briefing docs, LLM-based context routing, warm "paper feel" aesthetic
+- No code changes made (discovery only)
