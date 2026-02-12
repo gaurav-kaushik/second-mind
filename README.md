@@ -129,7 +129,20 @@ See `.env.local.example` for the full list:
 
 Remaining P2 polish items from `UX_IMPROVEMENTS_BACKLOG.md`:
 
-- Loading indicator animation could be more refined (shimmer/breathe effect)
-- Test data ("TestFile.md") visible in memory inspector from integration tests
-- Save action feedback in memory editor is too ephemeral (needs micro-interaction)
-- Next.js debug badge overlaps mobile input in development mode
+- Long responses clip at modal bottom — could use bottom fade gradient (P2-9)
+- Intent badge on user messages could show how input was classified (P2-10)
+- Command bar modal position shifts when messages appear (P2-12)
+- Memory inspector navigation hierarchy could use breadcrumbs (P2-13)
+- No dark mode yet (P2-14)
+- Response streaming not yet implemented — full response appears at once (P1-8)
+
+### Recently Fixed (SM-026)
+
+- AI no longer hallucinates actions for unimplemented intents (store, search, task, status)
+- API calls have 30s timeout — no more infinite "Thinking..." state
+- "New" conversation button properly resets loading state and aborts pending requests
+- Escape key works when Memory Inspector is open (document-level handler)
+- Mobile empty state shows prompt pills instead of blank page
+- Memory file loading indicator shows per-file "Loading..." state
+- Copy button on AI responses for easy sharing
+- E2E test cleanup prevents TestFile.md pollution

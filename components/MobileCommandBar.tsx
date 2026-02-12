@@ -23,8 +23,10 @@ export default function MobileCommandBar() {
   const [isLoading, setIsLoading] = useState(false);
   const [showMemoryInspector, setShowMemoryInspector] = useState(false);
   const [memoryInitialFile, setMemoryInitialFile] = useState<string | undefined>();
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -49,18 +51,16 @@ export default function MobileCommandBar() {
   }, []);
 
   const handleNewConversation = useCallback(() => {
+    abortControllerRef.current?.abort();
     setMessages([]);
     setInput("");
+    setIsLoading(false);
     setShowMemoryInspector(false);
     setMemoryInitialFile(undefined);
     inputRef.current?.focus();
   }, []);
 
-  const handleSubmit = useCallback(async () => {
-    if (!input.trim() || isLoading) return;
-
-    const userMessage = input.trim();
-
+  const submitMessage = useCallback(async (userMessage: string, currentMessages: Message[]) => {
     if (isMemoryCommand(userMessage)) {
       setInput("");
       setShowMemoryInspector(true);
@@ -70,7 +70,7 @@ export default function MobileCommandBar() {
     setInput("");
 
     const newMessages: Message[] = [
-      ...messages,
+      ...currentMessages,
       { role: "user", content: userMessage },
     ];
     setMessages(newMessages);
@@ -83,6 +83,9 @@ export default function MobileCommandBar() {
         .slice(0, -1)
         .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
 
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
       const res = await fetch("/api/command", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -90,6 +93,7 @@ export default function MobileCommandBar() {
           message: userMessage,
           history: history.length > 0 ? history : undefined,
         }),
+        signal: controller.signal,
       });
 
       if (!res.ok) {
@@ -123,7 +127,19 @@ export default function MobileCommandBar() {
     } finally {
       setIsLoading(false);
     }
-  }, [input, isLoading, messages]);
+  }, []);
+
+  const handleSubmit = useCallback(async () => {
+    if (!input.trim() || isLoading) return;
+    submitMessage(input.trim(), messages);
+  }, [input, isLoading, messages, submitMessage]);
+
+  const handleCopy = useCallback((content: string, index: number) => {
+    navigator.clipboard.writeText(content).then(() => {
+      setCopiedIndex(index);
+      setTimeout(() => setCopiedIndex(null), 2000);
+    });
+  }, []);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -178,8 +194,23 @@ export default function MobileCommandBar() {
             className="flex-1 overflow-y-auto px-4 py-4 space-y-4 min-h-0"
           >
             {messages.length === 0 && !isLoading && (
-              <div className="flex items-center justify-center h-full text-muted/60 text-sm">
-                Ask anything below
+              <div className="flex flex-col items-center justify-center h-full gap-6 px-2">
+                <p className="text-muted/50 text-sm font-light">What can I help with?</p>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {[
+                    "What should I read next?",
+                    "Plan a trip to Japan",
+                    "Show me my memory files",
+                  ].map((prompt) => (
+                    <button
+                      key={prompt}
+                      onClick={() => submitMessage(prompt, [])}
+                      className="text-xs text-muted hover:text-foreground border border-border/40 rounded-full px-3 py-1.5 transition-colors active:bg-accent/30"
+                    >
+                      {prompt}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
 
@@ -202,8 +233,24 @@ export default function MobileCommandBar() {
                     {msg.content}
                   </div>
                 ) : (
-                  <div className="max-w-none">
+                  <div className="max-w-none relative">
                     <MarkdownResponse content={msg.content} />
+                    <button
+                      onClick={() => handleCopy(msg.content, i)}
+                      className="absolute top-0 right-0 text-muted hover:text-foreground p-1.5 rounded active:bg-accent/30"
+                      title="Copy response"
+                    >
+                      {copiedIndex === i ? (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      ) : (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                        </svg>
+                      )}
+                    </button>
                   </div>
                 )}
               </div>

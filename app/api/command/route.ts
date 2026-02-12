@@ -58,10 +58,30 @@ export async function POST(request: NextRequest) {
       } satisfies CommandResponse);
     }
 
-    // Handle based on intent
-    // For now, all intents fall through to the question handler since
-    // store/task/search/status are not yet implemented. The question handler
-    // loads relevant memory files and produces a useful response regardless.
+    // Short-circuit unimplemented intents — be honest instead of hallucinating
+    const UNIMPLEMENTED_MESSAGES: Record<string, string> = {
+      store:
+        "Saving artifacts is coming soon. For now, you can store this in one of your memory files via the Memory Inspector (/memory).",
+      task: "Task planning and execution is coming soon. For now, I can help you think through tasks as a conversation.",
+      search:
+        "Search is coming soon. I can answer questions using your memory files — try asking me directly.",
+      status:
+        "The status dashboard is coming soon. Ask me anything and I'll do my best to help.",
+    };
+
+    if (routerResult.intent in UNIMPLEMENTED_MESSAGES) {
+      return NextResponse.json({
+        intent: routerResult.intent,
+        memoryFilesUsed: [],
+        response:
+          UNIMPLEMENTED_MESSAGES[
+            routerResult.intent as keyof typeof UNIMPLEMENTED_MESSAGES
+          ],
+        status: "not_implemented",
+      } satisfies CommandResponse);
+    }
+
+    // Handle question intent — load memory files and generate response
     const response = await handleQuestion(
       message,
       routerResult.memoryFilesNeeded,

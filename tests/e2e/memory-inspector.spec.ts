@@ -8,6 +8,7 @@ test("type /memory to open memory inspector, see file list, click a file", async
   // Open command bar
   await page.keyboard.press("Meta+k");
   const input = page.getByPlaceholder("Ask, store, search, or plan...");
+  await expect(input).toBeVisible({ timeout: 5000 });
 
   // Type /memory to trigger inspector
   await input.fill("/memory");

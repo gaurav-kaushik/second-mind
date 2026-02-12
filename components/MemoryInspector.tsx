@@ -33,6 +33,7 @@ export default function MemoryInspector({ onBack, initialFile }: MemoryInspector
   const [view, setView] = useState<View>("list");
   const [editContent, setEditContent] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingFile, setLoadingFile] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -57,7 +58,7 @@ export default function MemoryInspector({ onBack, initialFile }: MemoryInspector
   };
 
   const fetchFile = useCallback(async (filename: string) => {
-    setIsLoading(true);
+    setLoadingFile(filename);
     try {
       const res = await fetch(`/api/memory/${encodeURIComponent(filename)}`);
       if (res.ok) {
@@ -68,7 +69,7 @@ export default function MemoryInspector({ onBack, initialFile }: MemoryInspector
     } catch {
       // Silently fail
     } finally {
-      setIsLoading(false);
+      setLoadingFile(null);
     }
   }, []);
 
@@ -173,7 +174,11 @@ export default function MemoryInspector({ onBack, initialFile }: MemoryInspector
                   {file.filename}
                 </span>
                 <span className="text-xs text-muted">
-                  v{file.version} · {formatDate(file.updated_at)}
+                  {loadingFile === file.filename ? (
+                    <span className="animate-pulse">Loading...</span>
+                  ) : (
+                    <>v{file.version} · {formatDate(file.updated_at)}</>
+                  )}
                 </span>
               </div>
               <p className="text-xs text-muted mt-0.5 leading-relaxed">

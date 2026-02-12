@@ -12,8 +12,9 @@ test("app loads and shows persistent bottom input bar (not Cmd+K modal)", async 
   const input = page.getByPlaceholder("Ask, store, search, or plan...");
   await expect(input).toBeVisible();
 
-  // Should show "Ask anything below" empty state
-  await expect(page.getByText("Ask anything below")).toBeVisible();
+  // Should show prompt pills in empty state
+  await expect(page.getByText("What can I help with?")).toBeVisible();
+  await expect(page.getByRole("button", { name: "What should I read next?" })).toBeVisible();
 
   // Send button should be visible
   await expect(page.getByLabel("Send")).toBeVisible();

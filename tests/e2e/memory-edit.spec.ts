@@ -1,8 +1,16 @@
 import { test, expect } from "@playwright/test";
 
+let originalContent: string;
+
 test("edit memory file, save, and verify change persists", async ({
   page,
 }) => {
+  // Store original content for cleanup
+  const res = await page.request.get("/api/memory/Ideas.md");
+  if (res.ok()) {
+    const data = await res.json();
+    originalContent = data.content;
+  }
   await page.goto("/");
 
   // Open command bar and navigate to memory inspector
@@ -43,4 +51,13 @@ test("edit memory file, save, and verify change persists", async ({
   await expect(page.getByText("Ideas.md")).toBeVisible({ timeout: 10000 });
   await page.getByText("Ideas.md").click();
   await expect(page.getByText(marker)).toBeVisible({ timeout: 10000 });
+});
+
+test.afterAll(async ({ request }) => {
+  // Restore original content to avoid test data pollution
+  if (originalContent) {
+    await request.patch("/api/memory/Ideas.md", {
+      data: { content: originalContent },
+    });
+  }
 });

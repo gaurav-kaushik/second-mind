@@ -60,17 +60,41 @@ export async function handleQuestion(
     messages.push({ role: "user", content: message });
 
     const client = new Anthropic();
-    const response = await client.messages.create({
-      model,
-      max_tokens: 2048,
-      system: systemPrompt,
-      messages,
-    });
 
-    const text =
-      response.content[0].type === "text" ? response.content[0].text : "";
+    // 30-second timeout to prevent infinite "Thinking..." state
+    const API_TIMEOUT_MS = 30_000;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
 
-    return text || "I wasn't able to generate a response. Please try again.";
+    try {
+      const response = await client.messages.create(
+        {
+          model,
+          max_tokens: 2048,
+          system: systemPrompt,
+          messages,
+        },
+        { signal: controller.signal }
+      );
+
+      clearTimeout(timeoutId);
+
+      const text =
+        response.content[0].type === "text" ? response.content[0].text : "";
+
+      return text || "I wasn't able to generate a response. Please try again.";
+    } catch (innerErr) {
+      clearTimeout(timeoutId);
+
+      // Check for timeout abort
+      if (
+        innerErr instanceof Error &&
+        (innerErr.name === "AbortError" || innerErr.message.includes("abort"))
+      ) {
+        return "The request took too long. Please try again with a shorter question.";
+      }
+      throw innerErr; // Re-throw to be caught by outer catch
+    }
   } catch (err) {
     console.error(
       "Question handler error:",

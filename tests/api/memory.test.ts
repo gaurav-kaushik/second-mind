@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { getTestClient } from "../helpers";
 
 describe("Memory API (via Supabase client)", () => {
@@ -14,6 +14,26 @@ describe("Memory API (via Supabase client)", () => {
       },
       { onConflict: "filename" }
     );
+  });
+
+  afterAll(async () => {
+    // Clean up test data to avoid polluting the memory inspector
+    const { data } = await supabase
+      .from("memory_files")
+      .select("id")
+      .eq("filename", "TestFile.md")
+      .single();
+
+    if (data) {
+      await supabase
+        .from("memory_file_versions")
+        .delete()
+        .eq("memory_file_id", data.id);
+      await supabase
+        .from("memory_files")
+        .delete()
+        .eq("filename", "TestFile.md");
+    }
   });
 
   it("lists memory files without content", async () => {
