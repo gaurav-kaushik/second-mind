@@ -30,7 +30,26 @@ export async function middleware(request: NextRequest) {
   );
 
   // Refresh session if expired
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const pathname = request.nextUrl.pathname;
+
+  // Public routes that don't require auth
+  const isPublicRoute =
+    pathname === "/login" ||
+    pathname.startsWith("/api/health");
+
+  // Redirect unauthenticated users to login (except for public routes and API routes)
+  if (!user && !isPublicRoute && !pathname.startsWith("/api/")) {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  // Redirect authenticated users away from login
+  if (user && pathname === "/login") {
+    return NextResponse.redirect(new URL("/", request.url));
+  }
 
   return response;
 }

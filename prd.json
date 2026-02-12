@@ -302,7 +302,7 @@
         "Test: without auth, /api/command returns 401. After login, it returns valid response."
       ],
       "priority": 17,
-      "passes": false
+      "passes": true
     },
     {
       "id": "SM-018",

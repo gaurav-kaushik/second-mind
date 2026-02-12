@@ -1,4 +1,5 @@
 import { createServerClient } from "@/lib/supabase/server";
+import { requireAuth } from "@/lib/auth";
 import { routeCommand } from "@/lib/router";
 import { handleQuestion } from "@/lib/handlers/question";
 import { NextRequest, NextResponse } from "next/server";
@@ -6,6 +7,9 @@ import type { CommandResponse } from "@/types/api";
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireAuth();
+    if (!auth.authenticated) return auth.response;
+
     const body = await request.json();
 
     if (!body.message || typeof body.message !== "string" || body.message.trim() === "") {

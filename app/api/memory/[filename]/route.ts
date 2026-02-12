@@ -1,4 +1,5 @@
 import { createServerClient } from "@/lib/supabase/server";
+import { requireAuth } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
@@ -6,6 +7,9 @@ export async function GET(
   { params }: { params: Promise<{ filename: string }> }
 ) {
   try {
+    const auth = await requireAuth();
+    if (!auth.authenticated) return auth.response;
+
     const { filename } = await params;
     const supabase = await createServerClient();
 
@@ -34,6 +38,9 @@ export async function PATCH(
   { params }: { params: Promise<{ filename: string }> }
 ) {
   try {
+    const auth = await requireAuth();
+    if (!auth.authenticated) return auth.response;
+
     const { filename } = await params;
     const body = await request.json();
 
