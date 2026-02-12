@@ -1,4 +1,4 @@
-Read `prd.json` for the task list. Read `progress.txt` for learnings from previous iterations. Read `second-mind-prd.md` for full product spec if you need architectural context.
+Read `prd.json` for the task list. Read `progress.txt` for learnings from previous iterations. Read `second-mind-spec.md` for full product spec if you need architectural context.
 
 Each iteration:
 1. Pick the next story where `passes` is `false`, ordered by priority
