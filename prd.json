@@ -113,7 +113,7 @@
         "Test: run seed script, query memory_files table, verify 5 rows with non-empty content"
       ],
       "priority": 7,
-      "passes": false
+      "passes": true
     },
     {
       "id": "SM-008",

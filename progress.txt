@@ -55,3 +55,9 @@
 - All union types defined: ArtifactType, TaskStatus, UpdateStatus, CommandIntent
 - No 'any' types anywhere
 - Gotcha: supabase gen types includes a stderr line "Connecting to db 5432" that must be stripped from output
+
+## SM-007: Seed memory files
+- Created scripts/seed-memory.ts with 5 memory files: Gaurav, Taste, Reading, Travel, Ideas
+- Each has realistic content with H2 sections and example entries
+- Idempotent via upsert on filename
+- Requires env vars exported before running (not auto-loaded from .env.local)
