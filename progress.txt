@@ -21,3 +21,14 @@
 - npm run build succeeds with zero errors
 - All pre-existing files preserved
 - Gotcha: Tailwind v4 config is CSS-based, not JS/TS config file based
+
+## SM-003: Supabase local setup and client utilities
+- Initialized Supabase with npx supabase init (config.toml created)
+- Installed @supabase/supabase-js and @supabase/ssr
+- Created lib/supabase/server.ts (createServerClient using service role key)
+- Created lib/supabase/client.ts (createBrowserClient using anon key)
+- Created middleware.ts for session refresh
+- Created GET /api/health returning { status: ok, db: true } / { status: error, db: false }
+- Supabase local starts OK, health check confirmed working
+- Gotcha: Next.js 16 deprecates middleware.ts in favor of proxy convention (still works)
+- Gotcha: Health check must not depend on tables existing (use schema cache error detection)
