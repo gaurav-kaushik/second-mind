@@ -163,3 +163,23 @@
 - Question handler already catches errors and returns user-friendly messages
 - Client-side CommandBar shows gentle error messages and allows retry
 - /api/command returns 503 when Supabase unreachable, 400 for empty/missing message
+
+## SM-020: Deployment configuration and CI/CD
+- Created .github/workflows/ci.yml: runs on push to any branch (checkout, node 20, npm ci, lint, build)
+- Created .github/workflows/deploy.yml: runs on push to main (CI + supabase db push --linked)
+- No vercel.json needed: Vercel auto-detects Next.js App Router and configures correctly
+- Fixed useMediaQuery hook: replaced useState+useEffect with useSyncExternalStore to satisfy React hooks lint rule
+- npm run build succeeds with zero errors
+- npm run lint passes with zero warnings
+- All 14 tests pass (5 files)
+- Environment variables table:
+  | Variable | Where | Description |
+  | NEXT_PUBLIC_SUPABASE_URL | Vercel + GitHub Secrets | Supabase project API URL |
+  | NEXT_PUBLIC_SUPABASE_ANON_KEY | Vercel + GitHub Secrets | Supabase anonymous/public key |
+  | SUPABASE_SERVICE_ROLE_KEY | Vercel + GitHub Secrets | Supabase service role key (server only) |
+  | ANTHROPIC_API_KEY | Vercel | Anthropic Claude API key |
+  | ROUTER_MODEL | Vercel | Claude model for routing (default: claude-haiku-4-5-20251001) |
+  | GENERATION_MODEL | Vercel | Claude model for generation (default: claude-sonnet-4-5-20250929) |
+  | SUPABASE_ACCESS_TOKEN | GitHub Secrets | For supabase db push in CI/CD |
+  | SUPABASE_DB_PASSWORD | GitHub Secrets | For supabase db push in CI/CD |
+- Gotcha: Tailwind v4 removed unused import warnings — useSyncExternalStore replaces useState+useEffect pattern for media queries

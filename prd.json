@@ -355,7 +355,7 @@
         "Test: npm run build && npm run lint && npm run test all pass in sequence"
       ],
       "priority": 20,
-      "passes": false
+      "passes": true
     },
     {
       "id": "SM-021",
