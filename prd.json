@@ -97,7 +97,7 @@
         "Test: import types in a test file, verify TypeScript compilation succeeds"
       ],
       "priority": 6,
-      "passes": false
+      "passes": true
     },
     {
       "id": "SM-007",

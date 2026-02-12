@@ -47,3 +47,11 @@
 - Created artifacts, pending_memory_updates, tasks tables
 - Created indexes: ivfflat on embedding, gin FTS on title+content+summary, partial indexes on status
 - Note: ivfflat index warns about little data on empty table (normal)
+
+## SM-006: Shared TypeScript types
+- Generated types/supabase.ts from local schema via supabase gen types
+- Created types/models.ts with MemoryFile, MemoryFileVersion, Artifact, PendingMemoryUpdate, Task
+- Created types/api.ts with CommandRequest, CommandResponse, RouterResult, etc.
+- All union types defined: ArtifactType, TaskStatus, UpdateStatus, CommandIntent
+- No 'any' types anywhere
+- Gotcha: supabase gen types includes a stderr line "Connecting to db 5432" that must be stripped from output
