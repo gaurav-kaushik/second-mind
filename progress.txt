@@ -32,3 +32,11 @@
 - Supabase local starts OK, health check confirmed working
 - Gotcha: Next.js 16 deprecates middleware.ts in favor of proxy convention (still works)
 - Gotcha: Health check must not depend on tables existing (use schema cache error detection)
+
+## SM-004: Database schema for memory files and versions
+- Created migration 20260211000001_memory_files.sql
+- memory_files table with uuid pk, filename unique, description, content, version, updated_at
+- memory_file_versions table with fk to memory_files (cascade delete)
+- npx supabase db reset succeeds
+- Verified insert auto-generates uuid and timestamp
+- Gotcha: psql not available locally, use docker exec to query
