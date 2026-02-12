@@ -453,7 +453,7 @@
         "Test: clone the repo to a fresh directory, follow README setup steps, verify the app runs and E2E tests pass end to end"
       ],
       "priority": 25,
-      "passes": false
+      "passes": true
     }
   ]
 }

@@ -245,3 +245,14 @@
 - npm run build succeeds, npm run lint passes cleanly
 - Re-captured UX screenshots reflecting improved UI
 - Gotcha: Vitest was picking up Playwright test files (both use .spec.ts) — need explicit exclude config
+
+## SM-025: Final repo cleanup, full test suite, and documentation
+- Removed orphan dependency @vitejs/plugin-react from package.json (not needed for Next.js)
+- No dead code, unused imports, commented-out code, or TODO comments found
+- Created README.md: project description, prerequisites, setup steps, all scripts, project structure, env var table, known issues
+- Created DEPLOYMENT.md: step-by-step Vercel + Supabase Cloud deployment guide with env vars and troubleshooting
+- Created ARCHITECTURE.md: three-layer model, request flow diagram, tech stack rationale, data model, key files map
+- P2 items from UX_IMPROVEMENTS_BACKLOG.md listed in README under "Known Issues / Future Work"
+- .env.local.example verified accurate and complete
+- Final verification: npm run lint (0 warnings) + npm run build (0 errors) + npm run test (14 pass) + npm run test:e2e (20 pass)
+- All 25 stories pass ✓
