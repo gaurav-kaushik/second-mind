@@ -1,0 +1,459 @@
+{
+  "project": "second-mind",
+  "description": "Phase 1: Foundation. Core loop where you can talk to Second Mind and it knows you. Command bar UI, memory file system, LLM-based context routing, and question-answering with memory context. Deployed to Vercel + Supabase.",
+  "branchName": "feat/phase-1-foundation",
+  "userStories": [
+    {
+      "id": "SM-001",
+      "title": "Discovery and environment verification",
+      "description": "This repo starts nearly empty: just a README.md plus the Ralph loop files (prd.json, prompt.md, progress.txt, second-mind-prd.md). Before building anything, verify the development environment is ready and document what exists. This is the foundation everything else builds on -- if Node is the wrong version or Supabase CLI is missing, every subsequent story fails.",
+      "acceptance_criteria": [
+        "Verify Node.js >= 20 is available. Log the version to progress.txt. If not available, document the failure and stop.",
+        "Verify npm is available. Log the version.",
+        "Verify npx supabase --version works (Supabase CLI is installed). Log the version. If missing, install it via npm install -g supabase.",
+        "Verify Docker is running (required for local Supabase). Log confirmation.",
+        "Document the starting state of the repo in progress.txt: list all files present, note that this is a greenfield project",
+        "Read second-mind-prd.md and confirm you understand the architecture (note key decisions in progress.txt: Next.js App Router, Supabase + pgvector, Anthropic Claude API, Tailwind)",
+        "No code changes in this story -- discovery only"
+      ],
+      "priority": 1,
+      "passes": false
+    },
+    {
+      "id": "SM-002",
+      "title": "Project scaffolding: Next.js with Tailwind",
+      "description": "Initialize the Next.js project. The repo already has files in the root (prd.json, prompt.md, etc.) so create-next-app needs to be run carefully: either use --yes and accept the existing directory, or scaffold in a temp directory and move files. Preserve all existing Ralph loop files. Set up the base Tailwind config with the warm neutral palette from the design spec.",
+      "acceptance_criteria": [
+        "Next.js 14+ app with App Router is initialized in the repo root",
+        "All pre-existing files preserved: prd.json, prompt.md, progress.txt, second-mind-prd.md, README.md",
+        "TypeScript strict mode enabled in tsconfig.json",
+        "Tailwind CSS installed and configured with warm neutral palette in tailwind.config.ts (colors: background #faf8f5, foreground #1a1a1a, muted #6b6b6b, accent #e8e4df, border #d4d0cb)",
+        "Directory structure created: lib/, components/, app/api/, types/, scripts/",
+        ".env.local.example lists: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, ANTHROPIC_API_KEY, ROUTER_MODEL, GENERATION_MODEL",
+        ".gitignore includes: node_modules, .next, .env.local, .env*.local",
+        "Landing page at / renders 'Second Mind' text confirming the app boots",
+        "npm run dev starts without errors",
+        "npm run build succeeds with zero errors"
+      ],
+      "priority": 2,
+      "passes": false
+    },
+    {
+      "id": "SM-003",
+      "title": "Supabase local setup and client utilities",
+      "description": "Initialize Supabase in the project. Create client utilities for both server components (using service role key) and client components (using anon key) via @supabase/ssr. Create a middleware.ts that refreshes Supabase auth sessions. Add a health check API route that verifies DB connectivity.",
+      "acceptance_criteria": [
+        "supabase/config.toml exists (created via npx supabase init)",
+        "@supabase/supabase-js and @supabase/ssr installed",
+        "lib/supabase/server.ts exports createServerClient() for use in server components and API routes",
+        "lib/supabase/client.ts exports createBrowserClient() for use in client components",
+        "middleware.ts refreshes Supabase auth session on each request",
+        "GET /api/health returns { status: 'ok', db: true } when Supabase is running",
+        "GET /api/health returns { status: 'error', db: false } with a useful error message when Supabase is unreachable",
+        "Test: run npx supabase start, then curl /api/health returns db: true"
+      ],
+      "priority": 3,
+      "passes": false
+    },
+    {
+      "id": "SM-004",
+      "title": "Database schema: memory files and versions",
+      "description": "Create Supabase migration for the memory_files and memory_file_versions tables. These store the markdown briefing documents that form the system's understanding of the user. Include proper constraints, timestamps, and indexes.",
+      "acceptance_criteria": [
+        "Migration file at supabase/migrations/ creates memory_files table with: id (uuid pk default gen_random_uuid()), filename (text unique not null), description (text not null), content (text not null), version (integer default 1), updated_at (timestamptz default now())",
+        "Migration creates memory_file_versions table with: id (uuid pk), memory_file_id (uuid fk references memory_files), content (text not null), version (integer not null), created_at (timestamptz default now())",
+        "npx supabase db reset runs the migration without errors",
+        "Test: after migration, insert a row into memory_files and verify it has an auto-generated uuid and timestamp"
+      ],
+      "priority": 4,
+      "passes": false
+    },
+    {
+      "id": "SM-005",
+      "title": "Database schema: artifacts, pending updates, and tasks",
+      "description": "Create Supabase migration for the artifacts, pending_memory_updates, and tasks tables. Enable the pgvector extension. Create all required indexes including the vector similarity index on artifacts.embedding and full-text search index.",
+      "acceptance_criteria": [
+        "Migration enables pgvector extension: create extension if not exists vector",
+        "Migration creates artifacts table with: id (uuid pk), type (text not null), title (text not null), content (text), source_url (text), user_note (text), summary (text), embedding (vector(1536)), tags (text[] default '{}'), memory_refs (text[] default '{}'), status (text default 'unprocessed'), created_at (timestamptz default now()), updated_at (timestamptz default now())",
+        "Migration creates pending_memory_updates table with: id (uuid pk), memory_file_id (uuid fk), proposed_diff (text not null), reasoning (text not null), source_artifact_id (uuid fk references artifacts nullable), status (text default 'pending'), created_at (timestamptz default now())",
+        "Migration creates tasks table with: id (uuid pk), command (text not null), status (text default 'queued'), result (text), artifact_id (uuid fk references artifacts nullable), memory_files_used (text[] default '{}'), created_at (timestamptz default now()), completed_at (timestamptz)",
+        "Indexes created: ivfflat on artifacts.embedding (vector_cosine_ops, lists=100), gin full-text on artifacts (title + content + summary), index on pending_memory_updates.status where pending, index on tasks.status where queued or running",
+        "npx supabase db reset runs all migrations without errors",
+        "Test: insert an artifact row, verify all columns accept data correctly"
+      ],
+      "priority": 5,
+      "passes": false
+    },
+    {
+      "id": "SM-006",
+      "title": "Shared TypeScript types",
+      "description": "Create shared TypeScript type definitions for all database models and API request/response shapes. These types will be imported throughout the codebase. Generate initial types from the Supabase schema using the Supabase CLI.",
+      "acceptance_criteria": [
+        "Run npx supabase gen types typescript to generate types/supabase.ts from the local schema",
+        "types/models.ts exports clean application-level types: MemoryFile, MemoryFileVersion, Artifact, PendingMemoryUpdate, Task",
+        "types/api.ts exports request/response types: CommandRequest (message + optional history), CommandResponse (intent, memoryFilesUsed, response), RouterResult (intent, memoryFilesNeeded, actionDetails), MemoryFileListItem, SearchResult",
+        "All enum-like fields have union types: ArtifactType, TaskStatus, UpdateStatus, CommandIntent",
+        "No 'any' types anywhere in the type definitions",
+        "Test: import types in a test file, verify TypeScript compilation succeeds"
+      ],
+      "priority": 6,
+      "passes": false
+    },
+    {
+      "id": "SM-007",
+      "title": "Seed memory files",
+      "description": "Create a seed script that populates the memory_files table with 5 initial markdown briefing documents. Each file should have realistic placeholder content following the template in second-mind-prd.md Appendix A. The content should be structured with H2 sections and include example entries that demonstrate the expected format.",
+      "acceptance_criteria": [
+        "Seed script at scripts/seed-memory.ts, runnable with npx tsx scripts/seed-memory.ts",
+        "Script is idempotent: running it twice does not create duplicates (upsert on filename)",
+        "Seeds 5 files: Gaurav.md, Taste.md, Reading.md, Travel.md, Ideas.md",
+        "Each file has a one-line description for the routing manifest: Gaurav='Core identity, family, work, calendar, communication style', Taste='Books, films, music, art, design, aesthetic preferences', Reading='Books read, reading list, Substacks, reading patterns', Travel='Destinations, hotels, airlines, past trips, bucket list', Ideas='Essay seeds, story concepts, creative threads'",
+        "Gaurav.md content includes sections: Identity, Family, Work, Communication Style with placeholder entries",
+        "Other files include 2-3 H2 sections each with 3-5 example entries showing the expected format",
+        "Test: run seed script, query memory_files table, verify 5 rows with non-empty content"
+      ],
+      "priority": 7,
+      "passes": false
+    },
+    {
+      "id": "SM-008",
+      "title": "Memory file API routes",
+      "description": "Build the CRUD API routes for memory files. GET to list all files (metadata only), GET to read a specific file, PATCH to update a file's content (with automatic versioning). These routes are used by the command bar UI and the memory inspector.",
+      "acceptance_criteria": [
+        "GET /api/memory returns array of { id, filename, description, version, updated_at } -- no content field to keep it lightweight",
+        "GET /api/memory/[filename] returns the full memory file object including content",
+        "GET /api/memory/[filename] returns 404 with { error: 'Memory file not found' } for nonexistent files",
+        "PATCH /api/memory/[filename] accepts { content: string } in the request body",
+        "PATCH saves the current content to memory_file_versions before updating, increments version number, updates updated_at",
+        "PATCH returns the updated memory file object",
+        "PATCH returns 400 if content is missing or empty",
+        "All routes use the server Supabase client",
+        "Test: seed the DB, GET /api/memory returns 5 items without content. GET /api/memory/Gaurav.md returns content. PATCH /api/memory/Gaurav.md with new content, then GET returns new content. Query memory_file_versions to confirm old version was saved."
+      ],
+      "priority": 8,
+      "passes": false
+    },
+    {
+      "id": "SM-009",
+      "title": "Command router: LLM intent detection",
+      "description": "Build the core routing intelligence. The router receives user text and the memory file manifest, calls Claude (Haiku for speed), and returns a structured decision: what the user wants to do and which memory files are needed. This is the most critical component -- if routing is wrong, everything downstream breaks. The router should be a standalone module that can be tested independently.",
+      "acceptance_criteria": [
+        "lib/router.ts exports routeCommand(input: string, manifest: { filename: string, description: string }[]): Promise<RouterResult>",
+        "@anthropic-ai/sdk installed and configured",
+        "Router calls Claude with a system prompt that includes the manifest and instructions to return JSON with: intent, memoryFilesNeeded, actionDetails",
+        "System prompt instructs the model to always include Gaurav.md for question and task intents",
+        "Router model configurable via ROUTER_MODEL env var, defaults to claude-haiku-4-5-20241022",
+        "Router handles API errors gracefully: returns a sensible default (intent: 'question', all memory files) rather than crashing",
+        "Router response is parsed and validated: if the LLM returns malformed JSON, retry once, then fall back to defaults",
+        "Test: call routeCommand('what should I read next?', manifest) -- expect intent 'question', memoryFilesNeeded includes Reading.md and Taste.md",
+        "Test: call routeCommand('essay idea: gardening and code', manifest) -- expect intent 'store'",
+        "Test: call routeCommand('plan a trip to Japan', manifest) -- expect intent 'task', memoryFilesNeeded includes Travel.md",
+        "Test: call routeCommand('show me my memory files', manifest) -- expect intent 'memory_inspect'",
+        "Test: call routeCommand('find that article about grief', manifest) -- expect intent 'search'"
+      ],
+      "priority": 9,
+      "passes": false
+    },
+    {
+      "id": "SM-010",
+      "title": "Question handler: memory-informed generation",
+      "description": "Build the handler for the 'question' intent. It loads the memory files selected by the router, constructs a system prompt with their content, and calls Claude to generate a response. This is where Second Mind becomes useful: the LLM responds with full context about the user without being asked to provide it.",
+      "acceptance_criteria": [
+        "lib/handlers/question.ts exports handleQuestion(message: string, memoryFiles: string[], history?: ChatMessage[]): Promise<string>",
+        "Handler fetches the content of each requested memory file from the database",
+        "Handler constructs a system prompt that includes: a brief identity statement ('You are Second Mind, a personal intelligence system'), the content of each loaded memory file clearly delineated with headers, and instructions to respond naturally using the context without explicitly referencing the files",
+        "Handler calls Claude (generation model, configurable via GENERATION_MODEL env var, defaults to claude-sonnet-4-5-20250514) with the system prompt, user message, and optional conversation history",
+        "Handler supports conversation history as an array of {role, content} pairs, passed as prior messages to Claude",
+        "Response is returned as a string (markdown formatted)",
+        "Handler errors are caught and returned as user-friendly error messages, not stack traces",
+        "Test: call handleQuestion('what should I read next?', ['Gaurav.md', 'Reading.md', 'Taste.md']) and verify the response references information from the seeded memory files"
+      ],
+      "priority": 10,
+      "passes": false
+    },
+    {
+      "id": "SM-011",
+      "title": "Command API route: wiring router to handlers",
+      "description": "Build the POST /api/command endpoint that ties the router and handlers together. This is the single backend entry point for all user interactions. It receives user text, routes it, dispatches to the appropriate handler, and returns a structured response.",
+      "acceptance_criteria": [
+        "POST /api/command accepts { message: string, history?: Array<{ role: 'user' | 'assistant', content: string }> }",
+        "Route fetches the memory file manifest from the database (filename + description only)",
+        "Route calls routeCommand() with the message and manifest",
+        "For intent 'question': calls handleQuestion() and returns { intent: 'question', memoryFilesUsed: string[], response: string }",
+        "For other intents (store, task, search, status, memory_inspect): returns { intent, status: 'not_implemented', response: 'This capability is coming soon.' }",
+        "Returns 400 if message is missing or empty",
+        "Returns 500 with a generic error message (not stack trace) on internal errors",
+        "Response time for a simple question should be under 5 seconds (router call + generation call)",
+        "Test: POST /api/command with { message: 'what should I read next?' } returns intent 'question' and a substantive response",
+        "Test: POST /api/command with { message: 'essay idea: test' } returns intent 'store' and not_implemented status"
+      ],
+      "priority": 11,
+      "passes": false
+    },
+    {
+      "id": "SM-012",
+      "title": "Command bar UI: basic input and response",
+      "description": "Build the primary interaction surface. A command bar that opens with Cmd+K on desktop. Text input that sends to /api/command and displays the response. Focus on function first: get input working, get responses rendering. Styling comes next story.",
+      "acceptance_criteria": [
+        "Cmd+K opens a centered modal overlay on desktop",
+        "Modal has a single text input with placeholder 'Ask, store, search, or plan...'",
+        "Enter key submits the input to POST /api/command",
+        "Loading state shown while waiting (subtle animated dots or pulsing indicator, not a spinner)",
+        "Response text renders below the input inside the modal",
+        "Escape key or clicking outside the modal closes it",
+        "Input is auto-focused when modal opens",
+        "Modal prevents body scroll while open",
+        "Error states render as a gentle message, not a red error box",
+        "Test: open browser, press Cmd+K, type a question, see a response appear below the input"
+      ],
+      "priority": 12,
+      "passes": false
+    },
+    {
+      "id": "SM-013",
+      "title": "Command bar UI: paper feel design",
+      "description": "Apply the 'paper feel' design language to the command bar and response area. This is about typography, color, whitespace, and animation. The interface should feel like reading on paper, not using a SaaS app. Reference the Tailwind palette from SM-001 and the design principles in second-mind-prd.md Section 5.",
+      "acceptance_criteria": [
+        "Font stack: use a readable humanist sans-serif (Inter or system-ui) at 16px base for body text. Import via next/font if using Inter.",
+        "Modal background: warm off-white (#faf8f5 or tailwind 'background' color from config)",
+        "Modal has subtle rounded corners (12-16px radius), soft shadow, and backdrop blur",
+        "Text color: near-black (#1a1a1a) for body text, muted gray for secondary text",
+        "No bright blue anywhere. Accent colors are warm grays and tans.",
+        "Response text renders with proper markdown: bold, italic, headers, inline code, code blocks, links",
+        "Use a lightweight markdown renderer (react-markdown or similar) for response content",
+        "Response appears with a gentle fade-in animation (opacity 0 to 1, 200-300ms ease-in-out CSS transition)",
+        "Generous padding inside the modal: at least 24px on all sides",
+        "Input field has minimal styling: no heavy border, subtle bottom border or light outline, blends with the modal background",
+        "Test: visual inspection -- the command bar should feel calm, warm, and readable"
+      ],
+      "priority": 13,
+      "passes": false
+    },
+    {
+      "id": "SM-014",
+      "title": "Conversation threading in command bar",
+      "description": "Extend the command bar to support multi-turn conversation. After the first response, the input remains active for follow-ups. Previous exchanges scroll above. Conversation history is sent to /api/command so Claude maintains context. Add a way to start a new conversation.",
+      "acceptance_criteria": [
+        "After submitting a message, the input clears and remains focused",
+        "Previous messages and responses appear above the input in a scrollable area",
+        "User messages are visually distinct from system responses (different alignment or background shade)",
+        "Conversation history (last 10 exchanges) is sent in the POST /api/command request",
+        "Follow-up questions receive contextually aware responses",
+        "A 'New conversation' button (or Cmd+Shift+K shortcut) clears the history and resets the view",
+        "Long conversations scroll without hiding the input -- input stays pinned at bottom",
+        "Code blocks in responses have basic syntax highlighting (highlight.js or prismjs)",
+        "Links in responses are clickable and open in new tabs",
+        "Test: ask a question, get response, ask follow-up referencing the response, get a contextually aware answer"
+      ],
+      "priority": 14,
+      "passes": false
+    },
+    {
+      "id": "SM-015",
+      "title": "Mobile responsive command bar",
+      "description": "Make the command bar work well on mobile viewports. Instead of Cmd+K modal, mobile gets a persistent input bar at the bottom of the screen. Responses scroll above. The layout should feel native and touch-friendly.",
+      "acceptance_criteria": [
+        "On viewports under 768px, the command bar renders as a persistent bottom input bar instead of a modal",
+        "Input bar has adequate touch target size (at least 44px height)",
+        "Responses render in the main content area above the input bar, scrollable",
+        "Virtual keyboard does not obscure the input bar (handle viewport resize or use visualViewport API)",
+        "No horizontal scroll on any mobile viewport (320px through 768px)",
+        "Text is readable without zooming (16px minimum body text)",
+        "The 'New conversation' action is accessible on mobile (button in top bar or gesture)",
+        "Test: open in Chrome DevTools mobile emulator (iPhone 14 and Pixel 7 sizes), verify the experience is usable"
+      ],
+      "priority": 15,
+      "passes": false
+    },
+    {
+      "id": "SM-016",
+      "title": "Memory inspector view",
+      "description": "Add a way to inspect and edit memory files from the command bar. Typing '/memory' or 'show memory' opens a memory inspector that lists all files, lets you read them, and lets you edit and save changes. This is 'workshop mode' -- denser and more utilitarian than the default.",
+      "acceptance_criteria": [
+        "Typing '/memory' or 'show memory' in the command bar opens the memory inspector instead of sending to /api/command",
+        "Inspector shows a list of all memory files (from GET /api/memory) with filename, description, and last updated date",
+        "Clicking a file shows its full markdown content, rendered with the markdown renderer",
+        "An 'Edit' button switches to a textarea pre-filled with raw markdown content",
+        "Textarea is resizable and has enough height to work with (at least 400px or 60vh)",
+        "Save button calls PATCH /api/memory/[filename], shows success feedback, returns to read view",
+        "Cancel button returns to read view without saving",
+        "Back button returns to the file list from single file view",
+        "Inspector has a slightly denser visual feel: tighter line height, monospace font for editor, lighter background shade",
+        "Test: type '/memory', see 5 files listed, click Gaurav.md, see content, edit, save, verify change persists"
+      ],
+      "priority": 16,
+      "passes": false
+    },
+    {
+      "id": "SM-017",
+      "title": "Authentication and API security",
+      "description": "Add Supabase Auth so the API is not publicly accessible. Single user setup with email/password. Protect all API routes except /api/health. Add Row Level Security to all tables.",
+      "acceptance_criteria": [
+        "Login page at /login with email and password fields, styled to match the app's warm aesthetic",
+        "Successful login redirects to / (the main app)",
+        "Unauthenticated requests to /api/command return 401 JSON response",
+        "Unauthenticated requests to /api/memory return 401",
+        "/api/health remains public (no auth required)",
+        "Auth check is implemented as a reusable utility (lib/auth.ts) that API routes call, not duplicated in every route",
+        "Supabase RLS enabled on all tables: memory_files, memory_file_versions, artifacts, pending_memory_updates, tasks",
+        "RLS policy: authenticated users can select, insert, update, delete on all tables",
+        "Migration file adds RLS policies",
+        "Script at scripts/create-user.ts creates a user account: npx tsx scripts/create-user.ts email@example.com password123",
+        "Test: without auth, /api/command returns 401. After login, it returns valid response."
+      ],
+      "priority": 17,
+      "passes": false
+    },
+    {
+      "id": "SM-018",
+      "title": "Testing infrastructure and integration tests",
+      "description": "Set up a testing framework and write integration tests for the critical paths. The router and command API are the most important things to test. Use Vitest. Tests run against the local Supabase instance.",
+      "acceptance_criteria": [
+        "Vitest installed and configured (vitest.config.ts with path aliases matching tsconfig)",
+        "npm run test runs all tests",
+        "Test helper at tests/helpers.ts sets up Supabase client and seeds test data",
+        "tests/router.test.ts: router correctly classifies at least 5 input types (question, store, task, search, memory_inspect)",
+        "tests/handlers/question.test.ts: question handler loads memory files and returns non-empty response",
+        "tests/api/command.test.ts: /api/command returns valid response structure for a question input",
+        "tests/api/memory.test.ts: memory CRUD works (list, get, update with versioning)",
+        "tests/api/health.test.ts: /api/health returns ok",
+        "All tests pass with npm run test",
+        "Test commands documented in README"
+      ],
+      "priority": 18,
+      "passes": false
+    },
+    {
+      "id": "SM-019",
+      "title": "Error handling and edge cases",
+      "description": "Audit the codebase for error handling gaps. Ensure graceful failures everywhere: missing env vars, Supabase down, Anthropic API errors, malformed input, empty memory files. No unhandled promise rejections. No stack traces in API responses.",
+      "acceptance_criteria": [
+        "App startup checks for required env vars and fails with a clear message listing what is missing",
+        "If Supabase is unreachable, /api/command returns 503 with { error: 'Service temporarily unavailable' }",
+        "If Anthropic API returns an error (rate limit, invalid key), error is caught and user-friendly message returned",
+        "If Anthropic API returns malformed JSON from router, system retries once then falls back to default routing",
+        "Empty or whitespace-only message to /api/command returns 400 with { error: 'Message is required' }",
+        "All API routes have try/catch at the top level -- no unhandled exceptions",
+        "Console.error logs include context (route name, error message) but not sensitive data (API keys, full message content)",
+        "Client-side: if /api/command fails, the command bar shows a gentle error and allows retry",
+        "Test: send malformed requests to each API route and verify appropriate error codes, not 500s"
+      ],
+      "priority": 19,
+      "passes": false
+    },
+    {
+      "id": "SM-020",
+      "title": "Deployment configuration and CI/CD",
+      "description": "Prepare the project for production deployment to Vercel + Supabase Cloud. Set up CI/CD with GitHub Actions. Ensure builds pass, linting is clean, and the deployment pipeline works.",
+      "acceptance_criteria": [
+        "npm run build succeeds with zero errors",
+        "npm run lint passes cleanly",
+        ".github/workflows/ci.yml runs on push to any branch: checkout, setup node 20, npm ci, lint, build, test",
+        ".github/workflows/deploy.yml runs on push to main: same as CI plus Supabase CLI setup and db push --linked",
+        "vercel.json present if needed (document why, or state none needed)",
+        "All environment variables documented in table: name, where it goes (Vercel / GitHub Secrets / both), description",
+        "Test: npm run build && npm run lint && npm run test all pass in sequence"
+      ],
+      "priority": 20,
+      "passes": false
+    },
+    {
+      "id": "SM-021",
+      "title": "Playwright setup and desktop E2E tests",
+      "description": "Install Playwright and write end-to-end tests that exercise the core user flows on desktop. The agent should use Playwright to launch a browser, interact with the app as a real user would, and verify that the critical paths work. Tests run against the local dev server with Supabase running. These tests are the closest thing to a real user clicking through the app.",
+      "acceptance_criteria": [
+        "@playwright/test installed and configured (npx playwright install chromium)",
+        "playwright.config.ts configured: baseURL pointing to localhost dev server, chromium only for now, screenshot on failure, video on first retry",
+        "npm run test:e2e runs Playwright tests (separate from npm run test which runs Vitest unit/integration tests)",
+        "E2E test: app loads at / without errors -- tests/e2e/smoke.spec.ts",
+        "E2E test: Cmd+K opens the command bar, typing a question and pressing Enter shows a loading state then a response -- tests/e2e/command-bar.spec.ts",
+        "E2E test: submit 'what should I read next?', verify response contains text (not an error), verify response renders markdown (check for paragraph or list elements) -- tests/e2e/question-flow.spec.ts",
+        "E2E test: multi-turn conversation works -- ask a question, get response, ask follow-up, verify second response appears below first -- tests/e2e/conversation.spec.ts",
+        "E2E test: type '/memory' in command bar, verify memory inspector opens showing file list, click a file, verify content renders -- tests/e2e/memory-inspector.spec.ts",
+        "E2E test: in memory inspector, click Edit, modify content, click Save, verify change persists (reload and check) -- tests/e2e/memory-edit.spec.ts",
+        "All E2E tests pass with npm run test:e2e",
+        "Playwright test results output to tests/e2e/results/ (HTML report)",
+        "Add test:e2e script to package.json and document in README"
+      ],
+      "priority": 21,
+      "passes": false
+    },
+    {
+      "id": "SM-022",
+      "title": "Mobile E2E tests via Playwright device emulation",
+      "description": "Add Playwright E2E tests that emulate mobile devices. Playwright supports device emulation natively (viewport size, touch events, user agent) via its devices dictionary. Test the core flows on iPhone and Android viewports. These tests verify that the mobile-responsive command bar (SM-014) actually works as a user would experience it.",
+      "acceptance_criteria": [
+        "playwright.config.ts updated with a mobile project using Playwright's devices['iPhone 14'] preset (or similar: 390x844 viewport, touch, mobile user agent)",
+        "Add a second mobile project using devices['Pixel 7'] preset (or similar Android device)",
+        "E2E test (mobile): app loads at / and the persistent bottom input bar is visible (not the Cmd+K modal) -- tests/e2e/mobile/smoke.spec.ts",
+        "E2E test (mobile): tap input bar, type a question, submit, verify response renders above the input bar in the scrollable area -- tests/e2e/mobile/command-bar.spec.ts",
+        "E2E test (mobile): multi-turn conversation works on mobile -- input stays pinned at bottom, messages scroll above -- tests/e2e/mobile/conversation.spec.ts",
+        "E2E test (mobile): type '/memory', verify inspector opens and is usable (files listed, tappable, content readable) -- tests/e2e/mobile/memory-inspector.spec.ts",
+        "E2E test (mobile): no horizontal scroll on any page (verify document.body.scrollWidth <= window.innerWidth) -- tests/e2e/mobile/no-horizontal-scroll.spec.ts",
+        "E2E test (mobile): text is readable without zooming (verify body font-size >= 16px) -- tests/e2e/mobile/readability.spec.ts",
+        "All mobile E2E tests pass: npm run test:e2e (runs both desktop and mobile projects)",
+        "Screenshots on failure saved to tests/e2e/results/ for visual debugging"
+      ],
+      "priority": 22,
+      "passes": false
+    },
+    {
+      "id": "SM-023",
+      "title": "UX audit and improvements backlog",
+      "description": "Run through every user-facing flow manually via Playwright (or by reading the E2E test results and screenshots) and document UX issues, rough edges, and improvement ideas. The output is a UX_IMPROVEMENTS_BACKLOG.md file with prioritized issues. This is the retrospective on the UI work: what feels wrong, what is missing, what would make it delightful. The agent should use Playwright to take screenshots of every key state (empty state, loading, response, error, memory inspector list, memory editor, mobile views) and evaluate them against the design principles in second-mind-prd.md Section 5.",
+      "acceptance_criteria": [
+        "Script at scripts/ux-screenshots.ts uses Playwright to capture screenshots of every key UI state: landing page, command bar open (empty), command bar with response, command bar with conversation thread, loading state, error state, memory inspector list view, memory inspector file view, memory inspector edit view, mobile command bar, mobile conversation, mobile memory inspector",
+        "Screenshots saved to docs/ux-screenshots/ with descriptive filenames",
+        "UX_IMPROVEMENTS_BACKLOG.md created in repo root with sections: Critical (blocks usability), Important (degrades experience), Polish (nice to have)",
+        "Each backlog item has: issue description, which screen/flow it affects, what the fix should look like, priority (P0/P1/P2)",
+        "Backlog evaluates against second-mind-prd.md Section 5 design principles: paper feel, tactile interactions, information density, command bar primacy",
+        "Backlog includes at minimum: typography assessment (is the font right? sizes?), color assessment (warm enough? any stray blues?), animation assessment (fade-in working? feels good?), spacing assessment (generous enough?), mobile assessment (touch targets big enough? keyboard handling?), error state assessment (gentle enough?)",
+        "Backlog has at least 5 actionable items (if the UI is perfect, the agent is not looking hard enough)",
+        "Test: UX_IMPROVEMENTS_BACKLOG.md exists and has structured, actionable items with priorities"
+      ],
+      "priority": 23,
+      "passes": false
+    },
+    {
+      "id": "SM-024",
+      "title": "Execute top UX improvements",
+      "description": "Read UX_IMPROVEMENTS_BACKLOG.md and implement all P0 (Critical) and P1 (Important) items. These are the fixes that make Second Mind feel like a product someone wants to use, not a prototype. After implementing, re-run the E2E tests to make sure nothing broke. Update the backlog to mark completed items.",
+      "acceptance_criteria": [
+        "Read UX_IMPROVEMENTS_BACKLOG.md and identify all P0 and P1 items",
+        "All P0 items implemented and verified",
+        "All P1 items implemented and verified",
+        "Each completed item marked as DONE in UX_IMPROVEMENTS_BACKLOG.md with a brief note on what was changed",
+        "npm run test:e2e passes (all desktop and mobile E2E tests still green after changes)",
+        "npm run test passes (all unit/integration tests still green)",
+        "npm run build succeeds",
+        "Re-capture key screenshots (update docs/ux-screenshots/) to reflect the improved UI",
+        "Test: the command bar feels noticeably better after these changes. Remaining items in backlog are P2 polish only."
+      ],
+      "priority": 24,
+      "passes": false
+    },
+    {
+      "id": "SM-025",
+      "title": "Final repo cleanup, full test suite, and documentation",
+      "description": "Final pass on everything. Clean up any dead code, orphan files, or inconsistencies. Run the full test suite (unit, integration, E2E desktop, E2E mobile) and fix any failures. Write the final documentation: README, DEPLOYMENT.md, ARCHITECTURE.md. The README should be complete enough that a fresh Claude Code session can clone the repo, set up, and run locally in under 10 minutes. This is the last story -- leave the repo in a state you would be proud to hand to someone.",
+      "acceptance_criteria": [
+        "npm run lint passes with zero warnings",
+        "npm run test passes (all Vitest tests green)",
+        "npm run test:e2e passes (all Playwright tests green, desktop and mobile)",
+        "npm run build succeeds with zero errors",
+        "No dead code: remove unused imports, unused components, commented-out code blocks, empty files",
+        "No orphan dependencies in package.json (every dependency is actually imported somewhere)",
+        "README.md includes: project description, prerequisites (Node 20+, Docker), complete setup steps (clone, install, env vars, supabase start, db reset, seed, dev), all available scripts (dev, build, lint, test, test:e2e, seed, create-user), project structure overview with one-line descriptions of key directories",
+        "DEPLOYMENT.md with step-by-step: 1) Create Supabase Cloud project, 2) supabase link, 3) Push migrations, 4) Create user, 5) Connect GitHub to Vercel, 6) Set env vars (table: name, destination, description), 7) Push to main, 8) Verify, 9) Troubleshooting common issues",
+        "ARCHITECTURE.md includes: three-layer model (memory, artifacts, interaction), request flow diagram (text: input -> router -> handler -> response), tech choices with rationale, data model overview (tables and relationships), key files map (lib/router.ts does X, lib/handlers/ does Y, etc.)",
+        "All source files have JSDoc or comment at top explaining purpose",
+        "No unresolved TODO comments (resolve or convert to GitHub issues listed in README under 'Known Issues / Future Work')",
+        "UX_IMPROVEMENTS_BACKLOG.md P2 items listed in README under 'Known Issues / Future Work'",
+        ".env.local.example is accurate and complete",
+        "Test: clone the repo to a fresh directory, follow README setup steps, verify the app runs and E2E tests pass end to end"
+      ],
+      "priority": 25,
+      "passes": false
+    }
+  ]
+}

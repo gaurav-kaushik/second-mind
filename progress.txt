@@ -1,0 +1,2 @@
+# Second Mind -- Progress Log
+# Append-only. Each iteration writes what was built, learned, and gotchas.
