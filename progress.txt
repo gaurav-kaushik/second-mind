@@ -84,3 +84,9 @@
 - Uses generation model (configurable via GENERATION_MODEL, defaults to Sonnet)
 - Supports conversation history as array of {role, content} pairs
 - Error handling returns user-friendly messages, not stack traces
+
+## SM-011: Command API route
+- POST /api/command accepts { message, history? }
+- Fetches manifest, calls routeCommand, dispatches to handleQuestion for "question" intent
+- Other intents return { status: "not_implemented", response: "coming soon" }
+- Returns 400 for empty/missing message, 503 if Supabase unreachable, 500 for unexpected errors

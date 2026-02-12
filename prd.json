@@ -188,7 +188,7 @@
         "Test: POST /api/command with { message: 'essay idea: test' } returns intent 'store' and not_implemented status"
       ],
       "priority": 11,
-      "passes": false
+      "passes": true
     },
     {
       "id": "SM-012",
