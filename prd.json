@@ -152,7 +152,7 @@
         "Test: call routeCommand('find that article about grief', manifest) -- expect intent 'search'"
       ],
       "priority": 9,
-      "passes": false
+      "passes": true
     },
     {
       "id": "SM-010",

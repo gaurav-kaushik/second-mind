@@ -68,3 +68,12 @@
 - PATCH /api/memory/[filename] saves version history, increments version, updates content
 - Proper 404 for nonexistent files, 400 for missing content
 - All routes use server Supabase client
+
+## SM-009: Command router
+- Created lib/router.ts with routeCommand(input, manifest) -> RouterResult
+- Uses Claude Haiku via @anthropic-ai/sdk, configurable via ROUTER_MODEL env var
+- System prompt includes manifest of memory files and intent definitions
+- Always includes Gaurav.md for question/task intents
+- Parses JSON from LLM response, retries once on malformed JSON, falls back to defaults
+- Graceful error handling: returns all-files default on API failure
+- Note: live testing requires real ANTHROPIC_API_KEY (currently placeholder)
