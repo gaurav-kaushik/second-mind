@@ -200,3 +200,17 @@
 - HTML report output to tests/e2e/results/
 - Gotcha: Playwright HTML reporter outputFolder must not be parent of testDir outputDir (causes conflict warning)
 - Gotcha: LLM-dependent tests work even with placeholder API key because error handler returns graceful text response
+
+## SM-022: Mobile E2E tests via Playwright device emulation
+- Added mobile-iphone and mobile-pixel projects to playwright.config.ts
+- iPhone 14 uses Chromium with 390x844 viewport, touch, mobile UA (avoids WebKit install)
+- Pixel 7 uses Playwright's built-in devices['Pixel 7'] preset (already Chromium)
+- 6 mobile test files in tests/e2e/mobile/:
+  - smoke.spec.ts: persistent bottom input bar visible (not Cmd+K modal), send button present
+  - command-bar.spec.ts: type question, tap send, response renders above input
+  - conversation.spec.ts: multi-turn, input pinned at bottom, messages scroll above
+  - memory-inspector.spec.ts: /memory shows files, tap opens content
+  - no-horizontal-scroll.spec.ts: document.body.scrollWidth <= window.innerWidth
+  - readability.spec.ts: body font-size >= 16px
+- All 20 E2E tests pass (8 desktop + 6 iPhone + 6 Pixel) in ~7s
+- Gotcha: devices['iPhone 14'] uses WebKit which requires separate install; using Chromium with mobile viewport instead

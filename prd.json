@@ -395,7 +395,7 @@
         "Screenshots on failure saved to tests/e2e/results/ for visual debugging"
       ],
       "priority": 22,
-      "passes": false
+      "passes": true
     },
     {
       "id": "SM-023",
