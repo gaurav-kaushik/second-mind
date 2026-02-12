@@ -40,3 +40,10 @@
 - npx supabase db reset succeeds
 - Verified insert auto-generates uuid and timestamp
 - Gotcha: psql not available locally, use docker exec to query
+
+## SM-005: Artifacts, pending updates, and tasks tables
+- Created migration 20260211000002_artifacts_tasks.sql
+- Enabled pgvector extension
+- Created artifacts, pending_memory_updates, tasks tables
+- Created indexes: ivfflat on embedding, gin FTS on title+content+summary, partial indexes on status
+- Note: ivfflat index warns about little data on empty table (normal)

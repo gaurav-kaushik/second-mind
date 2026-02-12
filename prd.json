@@ -82,7 +82,7 @@
         "Test: insert an artifact row, verify all columns accept data correctly"
       ],
       "priority": 5,
-      "passes": false
+      "passes": true
     },
     {
       "id": "SM-006",
